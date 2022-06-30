@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.work.*
 import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
+import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.domain.Parameters
 import kotlinx.coroutines.delay
 
@@ -16,6 +17,8 @@ class RefreshDataWorker(
     context: Context,
     workerParameters: WorkerParameters
 ) : CoroutineWorker(context, workerParameters) {
+
+    private val apiService = ApiFactory.apiService
 
     private val mapper = DataMapper()
 
@@ -28,20 +31,21 @@ class RefreshDataWorker(
 
                 try {
 
-                    val ssid = DataList.ssidState.value
-                    Log.d("HCS_RefreshDataWorker", "SSID - $ssid")
+                    val jsonContainer = apiService.getData()
+                    val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
 
+                    Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+
+                    DataList.movieListResponse = dataDtoList.map {
+                        mapper.valueDtoToDbModel(it)
+                    }
 
                 } catch (e: Exception) {
                     Log.d("HCS_RefreshDataWorker", e.toString())
                 }
 
-                delay(10000)
-
+                delay(60000)
             }
-
-
-
     }
 
     companion object {

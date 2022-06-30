@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModelProvider
 import com.example.homecontrolssystemv01.data.DataList
+import com.example.homecontrolssystemv01.domain.Data
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.ui.theme.HomeControlsSystemV01Theme
 
@@ -36,7 +37,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Greeting(movieListResponse,DataList.ssidState.value)
+                    Greeting(viewModel.getData(),DataList.ssidState.value)
                 }
             }
         }
@@ -44,11 +45,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(listResult:List<ScanResult>,ssid:String) {
+fun Greeting(listData:List<Data>, ssid:String) {
 
     Column{
-        Text(text = "ScanResult_SSID ${listResult}")
-        Text(text = "SSID $ssid")
+        Text(text = "Имя WiFi сети $ssid")
+        if (listData.isNotEmpty()) {
+            Text(text = "Дата и время ${listData[0].value}")
+            Text(text = "Наружная температура ${listData[1].value} С")
+            Text(text = "Входная дверь ${listData[2].value}")
+            Text(text = "Дверь на террасу ${listData[3].value}")
+        }
     }
 }
 
