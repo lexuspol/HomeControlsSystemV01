@@ -18,16 +18,11 @@ class MainViewModel(application: Application): AndroidViewModel(application)
 
 init {
     loadDataUseCase(Parameters(Mode.CLIENT,"AlexWiFi"))
-
 }
 
     override fun onCleared() {
         super.onCleared()
-
         closeConnect()
-
-
-
     }
 
 }
