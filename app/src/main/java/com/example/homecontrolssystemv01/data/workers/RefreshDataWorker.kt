@@ -5,8 +5,10 @@ import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.work.*
 import com.example.homecontrolssystemv01.data.DataList
+import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
+import com.example.homecontrolssystemv01.domain.Mode
 import com.example.homecontrolssystemv01.domain.Parameters
 import kotlinx.coroutines.delay
 
@@ -26,26 +28,48 @@ class RefreshDataWorker(
 
 
         override suspend fun doWork(): Result {
-
-            while (true) {
-
-                try {
-
-                    val jsonContainer = apiService.getData()
-                    val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
-
-                    Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
-
-                    DataList.movieListResponse = dataDtoList.map {
-                        mapper.valueDtoToDbModel(it)
+            when (mode) {
+                Mode.SERVER.name -> workStart(mode)
+                Mode.CLIENT.name -> {
+                    while (true){
+                        workStart(mode)
+                        delay(30000)
                     }
-
-                } catch (e: Exception) {
-                    Log.d("HCS_RefreshDataWorker", e.toString())
                 }
+                else -> {
 
-                delay(60000)
+                    Log.d("HCS_RefreshDataWorker","mode not SERVER or CLIENT")
+
+                }
             }
+
+            return Result.success()
+    }
+
+    private suspend fun workStart(mode:String){
+
+        try {
+
+            val jsonContainer = apiService.getData()
+            val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
+
+            Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+
+            val dataDbModelList = dataDtoList.map {
+                mapper.valueDtoToDbModel(it)
+            }
+
+            DataList.movieListResponse = dataDbModelList
+
+            if (mode == Mode.SERVER.name){
+                FirebaseFactory.setDataToFirebase(dataDbModelList)
+            }
+
+
+        } catch (e: Exception) {
+            Log.d("HCS_RefreshDataWorker", e.toString())
+        }
+
     }
 
     companion object {

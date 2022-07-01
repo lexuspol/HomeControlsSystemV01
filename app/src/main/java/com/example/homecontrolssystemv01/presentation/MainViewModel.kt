@@ -19,7 +19,7 @@ class MainViewModel(application: Application): AndroidViewModel(application)
     }
 
 init {
-    loadDataUseCase(Parameters(Mode.CLIENT,"AlexWiFi"))
+    loadDataUseCase(Parameters(Mode.SERVER,"AlexWiFi"))
 }
 
     override fun onCleared() {

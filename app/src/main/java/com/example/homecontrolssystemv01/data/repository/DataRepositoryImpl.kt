@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.work.*
 import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.data.DataList
+import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.Data
@@ -35,7 +36,7 @@ class DataRepositoryImpl (
             val ssidFromWiFi = wifiManager.connectionInfo.ssid
 
             if (ssidFromState == ssidFromWiFi){
-                Log.d("HCS_BroadcastReceiver",ssidFromWiFi)
+                Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
                 setSSIDtoSate(ssidFromWiFi)
                 startLoad()
@@ -73,9 +74,20 @@ class DataRepositoryImpl (
         val ssidFromParameters = "\"${_parameters.ssidSet}\""
 
         if (ssidFromState == ssidFromParameters) {
+
+            FirebaseFactory.removeEventListener()
+
             createWorker(_parameters)
+
         } else {
-            loadFirebase()
+
+            workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+            workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+
+            if(_parameters.mode.name == Mode.CLIENT.name){
+                loadFirebase()
+            }
+            Log.d("HCS_BroadcastReceiver","SSID unknown in mode SERVER")
         }
 
     }
@@ -89,12 +101,15 @@ class DataRepositoryImpl (
     }
 
     private fun loadFirebase() {
-        workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-        workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-        Log.d("HCS_WorkManager","lode Firebase")
+
+        FirebaseFactory.createEventListener()
+
+        Log.d("HCS_BroadcastReceiver","lode Firebase")
     }
 
     private fun createWorker(parameters: Parameters){
+
+
 
         when (parameters.mode) {
             Mode.SERVER -> {
