@@ -96,7 +96,7 @@ class RefreshDataWorker(
 
         private fun modeToData(parameters: Parameters): Data {
             return Data.Builder()
-                .putString(NAME_DATA_MODE,parameters.mode.name)
+                .putString(NAME_DATA_MODE,parameters.mode)
                 .build()
         }
 

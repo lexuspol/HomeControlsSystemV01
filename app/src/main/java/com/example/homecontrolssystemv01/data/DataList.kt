@@ -12,4 +12,6 @@ object DataList {
     var parameters = mutableStateOf(Parameters())
     var ssidState = mutableStateOf("")
 
+    var ssidList = mutableListOf<String>()
+
 }

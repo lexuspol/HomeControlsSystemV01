@@ -53,7 +53,11 @@ class DataRepositoryImpl (
 
     override fun loadData(parameters: Parameters) {
 
+        Log.d("HCS_fromMainViewModel",parameters.toString())
+
         _parameters = parameters
+
+        setSSIDtoSate("")
 
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
         application.registerReceiver(wifiScanReceiver, intentFilter)
@@ -66,6 +70,18 @@ class DataRepositoryImpl (
 
     override fun closeConnect() {
         application.unregisterReceiver(wifiScanReceiver)
+    }
+
+    override fun getSsidList():MutableList<String> {
+        val listSsid = mutableListOf<String>()
+
+        wifiManager.scanResults.map {
+            listSsid.add(it.SSID)
+        }
+
+
+        return listSsid
+
     }
 
     fun startLoad(){
@@ -84,7 +100,7 @@ class DataRepositoryImpl (
             workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
             workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
 
-            if(_parameters.mode.name == Mode.CLIENT.name){
+            if(_parameters.mode == Mode.CLIENT.name){
                 loadFirebase()
             }
             Log.d("HCS_BroadcastReceiver","SSID unknown in mode SERVER")
@@ -112,7 +128,7 @@ class DataRepositoryImpl (
 
 
         when (parameters.mode) {
-            Mode.SERVER -> {
+            Mode.SERVER.name -> {
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
                 workManager.enqueueUniquePeriodicWork(
                     RefreshDataWorker.NAME_PERIODIC,
@@ -122,7 +138,7 @@ class DataRepositoryImpl (
                 Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
             }
 
-            Mode.CLIENT -> {
+            Mode.CLIENT.name -> {
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
                 workManager.enqueueUniqueWork(
                     RefreshDataWorker.NAME_ONE_TIME,
@@ -131,7 +147,9 @@ class DataRepositoryImpl (
                 )
                 Log.d("HCS_WorkManager","Mode.CLIENT - loadDataOneTime")
             }
-            Mode.NO_MODE->{
+            Mode.NO_MODE.name->{
+                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
                 Log.d("HCS_WorkManager","Mode.NO_MODE")
             }
         }

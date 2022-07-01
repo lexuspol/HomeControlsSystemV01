@@ -9,5 +9,7 @@ interface DataRepository {
 
    fun closeConnect()
 
+   fun getSsidList():MutableList<String>
+
 
 }
