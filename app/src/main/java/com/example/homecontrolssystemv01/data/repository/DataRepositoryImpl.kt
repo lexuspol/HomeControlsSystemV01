@@ -10,42 +10,38 @@ import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.work.*
 import androidx.work.WorkManager
+import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.model.Data
 import com.example.homecontrolssystemv01.domain.DataRepository
-import com.example.homecontrolssystemv01.presentation.enums.Mode
+import com.example.homecontrolssystemv01.domain.model.DataConnect
+import com.example.homecontrolssystemv01.domain.model.ModeConnect
 
-class DataRepositoryImpl (
-    private val application: Application
-        ): DataRepository {
+class DataRepositoryImpl (private val application: Application): DataRepository {
 
     private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val workManager = WorkManager.getInstance(application)
     private  val mapper = DataMapper()
     private val intentFilter = IntentFilter()
-    //private var _parameters = Parameters()
-    private var _mode = Mode.STOP.name
-    private var _ssid = ""
+
+    private var _connectSetting = ConnectSetting()
 
     private val wifiScanReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
 
-            val ssidFromState = loadSSIDfromState()
             val ssidFromWiFi = wifiManager.connectionInfo.ssid
 
-            if (ssidFromState == ssidFromWiFi){
+            if (DataList.dataConnect.value.ssidConnect == ssidFromWiFi){
                 Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
-                setSSIDtoSate(ssidFromWiFi)
-                startLoad()
+                startLoad(ssidFromWiFi)
             }
         }
     }
-
 
     override fun getDataList(): List<Data>{
         return DataList.movieListResponse.map {
@@ -53,126 +49,89 @@ class DataRepositoryImpl (
         }
     }
 
-    override fun loadData(mode: String,ssid: String) {
+    override fun getDataConnect(): MutableState<DataConnect> {
+        return DataList.dataConnect
+    }
 
-        _mode = mode
-        _ssid = ssid
+    override fun loadData(connectSetting:ConnectSetting) {
 
-        Log.d("HCS_fromMainViewModel","Mode = ${mode}, Ssid = $ssid")
+        _connectSetting = connectSetting
 
+        Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
+                "Ssid = ${_connectSetting.ssid}")
 
-
-        setSSIDtoSate("")
+        DataList.dataConnect.value.ssidConnect = ""
 
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
         application.registerReceiver(wifiScanReceiver, intentFilter)
 
-        //проверить без этих методов
-        //setSSIDtoSate(wifiManager.connectionInfo.ssid)
-        //startLoad()
-
     }
 
-    override fun closeConnect() {
-        application.unregisterReceiver(wifiScanReceiver)
-    }
+    override fun closeConnect() {application.unregisterReceiver(wifiScanReceiver)}
 
-    override fun getSsid(): MutableState<String> {
-        return DataList.ssidState
-    }
-
-//    override fun getSsidList():MutableList<String> {
-//        val listSsid = mutableListOf<String>()
-//        wifiManager.scanResults.map {
-//            listSsid.add(it.SSID)
-//        }
-//        return listSsid
-//    }
+    override fun getSsid(): MutableState<String> = DataList.ssidState
 
     override fun getSsidList():MutableList<String>{
         return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
     }
 
+    private fun startLoad(ssidFromWiFi:String){
 
+        val ssidFromParameters = "\"${_connectSetting.ssid}\""
 
+        val dataConnect = DataConnect(ssidFromWiFi)
 
-    fun startLoad(){
-
-        val ssidFromState = loadSSIDfromState()
-        val ssidFromParameters = "\"${_ssid}\""
-
-        if (ssidFromState == ssidFromParameters) {
-
-            FirebaseFactory.removeEventListener()
-
-            createWorker()
-
-        } else {
-
-            workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-            workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-
-            if(_mode == Mode.CLIENT.name){
-                loadFirebase()
+         when{
+                (ssidFromWiFi == ssidFromParameters)&&_connectSetting.serverMode -> {
+                    dataConnect.modeConnect = ModeConnect.SERVER
+                    workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+                    FirebaseFactory.removeEventListener()
+                    createWorker()
+                }
+                (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
+                    dataConnect.modeConnect = ModeConnect.LOCAL
+                    workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+                    FirebaseFactory.removeEventListener()
+                    createWorker()
+                }
+                (ssidFromWiFi != ssidFromParameters)&&!_connectSetting.serverMode -> {
+                    dataConnect.modeConnect = ModeConnect.REMOTE
+                    workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+                    workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+                    loadFirebase()
+                }
+                else -> dataConnect.modeConnect = ModeConnect.STOP
             }
-            Log.d("HCS_BroadcastReceiver","SSID unknown in mode SERVER")
-        }
 
-    }
+        Log.d("HCS_BroadcastReceiver", "ssid = ${dataConnect.ssidConnect}, mode - ${dataConnect.modeConnect.name}")
 
-    fun setSSIDtoSate(ssid:String){
-        DataList.ssidState.value = ssid
-    }
-
-    fun loadSSIDfromState():String{
-        return DataList.ssidState.value
+        DataList.dataConnect.value = dataConnect
     }
 
     private fun loadFirebase() {
-
         FirebaseFactory.createEventListener()
-
         Log.d("HCS_BroadcastReceiver","lode Firebase")
     }
 
     private fun createWorker(){
 
-
-
-        when (_mode) {
-            Mode.SERVER.name -> {
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-                workManager.enqueueUniquePeriodicWork(
-                    RefreshDataWorker.NAME_PERIODIC,
-                    ExistingPeriodicWorkPolicy.REPLACE,
-                    RefreshDataWorker.makeRequestPeriodic(_mode)
-                )
-                Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
-            }
-
-            Mode.CLIENT.name -> {
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                workManager.enqueueUniqueWork(
-                    RefreshDataWorker.NAME_ONE_TIME,
-                    ExistingWorkPolicy.REPLACE,
-                    RefreshDataWorker.makeRequestOneTime(_mode)
-                )
-                Log.d("HCS_WorkManager","Mode.CLIENT - loadDataOneTime")
-            }
-            Mode.STOP.name->{
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                Log.d("HCS_WorkManager","Mode.STOP")
-            }
+        if (_connectSetting.serverMode){
+            workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+            workManager.enqueueUniquePeriodicWork(
+                RefreshDataWorker.NAME_PERIODIC,
+                ExistingPeriodicWorkPolicy.REPLACE,
+                RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode)
+            )
+            Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
+        } else{
+            workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+            workManager.enqueueUniqueWork(
+                RefreshDataWorker.NAME_ONE_TIME,
+                ExistingWorkPolicy.REPLACE,
+                RefreshDataWorker.makeRequestOneTime(_connectSetting.serverMode)
+            )
+            Log.d("HCS_WorkManager","Mode.CLIENT - loadDataOneTime")
         }
-
     }
-
-
-
-
-
-
-
 
 }

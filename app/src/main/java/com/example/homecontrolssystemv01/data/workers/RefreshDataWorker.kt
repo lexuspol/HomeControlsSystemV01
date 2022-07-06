@@ -7,7 +7,6 @@ import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
-import com.example.homecontrolssystemv01.presentation.enums.Mode
 import kotlinx.coroutines.delay
 
 
@@ -22,29 +21,21 @@ class RefreshDataWorker(
 
     private val mapper = DataMapper()
 
-    private val mode = workerParameters.inputData.getString(NAME_DATA_MODE)
-
+    private val serverMode = workerParameters.inputData.getBoolean(NAME_DATA_MODE,false)
 
         override suspend fun doWork(): Result {
-            when (mode) {
-                Mode.SERVER.name -> workStart(mode)
-                Mode.CLIENT.name -> {
-                    while (true){
-                        workStart(mode)
-                        delay(30000)
-                    }
-                }
-                else -> {
 
-                    Log.d("HCS_RefreshDataWorker","mode not SERVER or CLIENT")
-
+            if (serverMode) workStart() else{
+                while (true){
+                    workStart()
+                    delay(30000)
                 }
             }
 
             return Result.success()
     }
 
-    private suspend fun workStart(mode:String){
+    private suspend fun workStart(){
 
         try {
 
@@ -59,7 +50,7 @@ class RefreshDataWorker(
 
             DataList.movieListResponse = dataDbModelList
 
-            if (mode == Mode.SERVER.name){
+            if (serverMode){
                 FirebaseFactory.setDataToFirebase(dataDbModelList)
             }
 
@@ -77,24 +68,24 @@ class RefreshDataWorker(
         const val NAME_DATA_MODE = "MODE"
 
 
-        fun makeRequestPeriodic(mode: String): PeriodicWorkRequest {
+        fun makeRequestPeriodic(serverMode: Boolean): PeriodicWorkRequest {
             return PeriodicWorkRequestBuilder<RefreshDataWorker>(15,
                 TimeUnit.MINUTES)
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(mode))
+                .setInputData(modeToData(serverMode))
                 .build()
         }
 
-        fun makeRequestOneTime(mode: String): OneTimeWorkRequest {
+        fun makeRequestOneTime(serverMode: Boolean): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(mode))
+                .setInputData(modeToData(serverMode))
                 .build()
         }
 
-        private fun modeToData(mode: String): Data {
+        private fun modeToData(serverMode: Boolean): Data {
             return Data.Builder()
-                .putString(NAME_DATA_MODE,mode)
+                .putBoolean(NAME_DATA_MODE,serverMode)
                 .build()
         }
 
