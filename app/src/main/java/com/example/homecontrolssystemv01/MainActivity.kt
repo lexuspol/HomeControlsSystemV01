@@ -1,9 +1,9 @@
 package com.example.homecontrolssystemv01
 
-import android.net.wifi.ScanResult
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
@@ -15,25 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import com.example.homecontrolssystemv01.data.DataList
-import com.example.homecontrolssystemv01.domain.Data
-import com.example.homecontrolssystemv01.domain.Mode
 import com.example.homecontrolssystemv01.presentation.MainViewModel
+import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.ui.theme.HomeControlsSystemV01Theme
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: MainViewModel
-
-    private var movieListResponse:List<ScanResult> by mutableStateOf(listOf())
-    private var movieSSIDResponse:String by mutableStateOf("")
-
+    private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         setContent {
             HomeControlsSystemV01Theme {
@@ -43,9 +34,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Column {
 
-                        LoadData(ssidList = viewModel.getSsid(),viewModel)
+                        Row() {
+                            MyRadioButton(viewModel.getSsidForRadioButton(),viewModel)
+                            MyRadioButton(viewModel.getMode(),viewModel)
+                        }
                         MyButtonLoad(viewModel)
-                        Greeting(viewModel.getData(),DataList.ssidState.value)
+                        Greeting(viewModel)
                     }
 
 
@@ -56,10 +50,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(listData:List<Data>, ssid:String) {
+fun Greeting(viewModel: MainViewModel) {
+
+    val listData = viewModel.getData()
+    val ssid = viewModel.getSsidFromText()
+
 
     Column{
-        Text(text = "Имя WiFi сети $ssid")
+        Text(text = "Имя WiFi сети ${ssid.value}")
         if (listData.isNotEmpty()) {
             Text(text = "Дата и время ${listData[0].value}")
             Text(text = "Наружная температура ${listData[1].value} С")
@@ -69,59 +67,15 @@ fun Greeting(listData:List<Data>, ssid:String) {
     }
 }
 
-
 @Composable
-fun LoadData(ssidList:MutableList<String>,viewModel:MainViewModel) {
-    //val radioOptions = listOf("Calls", "Missed", "Friends")
-
-    val radioOptionsSsid = mutableListOf("NO_WIFI")
-    radioOptionsSsid.addAll(ssidList)
-    var indexSsid = radioOptionsSsid.indexOf(viewModel.parametrs.ssidSet)
-if (indexSsid == -1){
-    indexSsid = 0
-}
-
-
-//    radioOptionsSsid.forEach {
-//if (it == viewModel.parametrs.ssidSet){
-//    return
-//}else{
-//    indexSsid += 1
-//    if (indexSsid>radioOptionsSsid.size){
-//        indexSsid = 0
-//    }
-//
-//}
-//    }
-
-    val radioOptionsMode = mutableListOf<String>()
-
-    Mode.values().map {
-        radioOptionsMode.add(it.name)
+fun MyRadioButton (radioButtonList: RadioButtonList,viewModel:MainViewModel){
+    val (selectedOption, onOptionSelected) = remember {
+        mutableStateOf(radioButtonList.list[radioButtonList.index])
     }
-
-    var indexMode = radioOptionsMode.indexOf(viewModel.parametrs.mode)
-    if (indexMode == -1){
-        indexMode = 0
-    }
-
-    Row() {
-
-        MyRadioButton(1,list = radioOptionsSsid,viewModel,indexSsid)
-        MyRadioButton(2,list = radioOptionsMode,viewModel,indexMode)
-
-    }
-
-
-}
-
-@Composable
-fun MyRadioButton (nParam:Int,list:MutableList<String>,viewModel:MainViewModel,index:Int){
-    val (selectedOption, onOptionSelected) = remember { mutableStateOf(list[index]) }
     Column(
 //        Modifier.selectableGroup()
     ) {
-        list.forEach { text ->
+        radioButtonList.list.forEach { text ->
             Row(
                 Modifier
                     //.fillMaxWidth()
@@ -130,8 +84,8 @@ fun MyRadioButton (nParam:Int,list:MutableList<String>,viewModel:MainViewModel,i
                         selected = (text == selectedOption),
                         onClick = {
                             onOptionSelected(text)
-                            viewModel.setParam(nParam,text)
-                             },
+                            viewModel.setParam(radioButtonList.keySetting, text)
+                        },
                         role = Role.RadioButton
                     )
                     .padding(horizontal = 16.dp),

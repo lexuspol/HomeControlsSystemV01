@@ -1,15 +1,13 @@
 package com.example.homecontrolssystemv01.data.workers
 
 import android.content.Context
-import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.work.*
 import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
-import com.example.homecontrolssystemv01.domain.Mode
-import com.example.homecontrolssystemv01.domain.Parameters
+import com.example.homecontrolssystemv01.presentation.enums.Mode
 import kotlinx.coroutines.delay
 
 
@@ -79,24 +77,24 @@ class RefreshDataWorker(
         const val NAME_DATA_MODE = "MODE"
 
 
-        fun makeRequestPeriodic(parameters: Parameters): PeriodicWorkRequest {
+        fun makeRequestPeriodic(mode: String): PeriodicWorkRequest {
             return PeriodicWorkRequestBuilder<RefreshDataWorker>(15,
                 TimeUnit.MINUTES)
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(parameters))
+                .setInputData(modeToData(mode))
                 .build()
         }
 
-        fun makeRequestOneTime(parameters: Parameters): OneTimeWorkRequest {
+        fun makeRequestOneTime(mode: String): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(parameters))
+                .setInputData(modeToData(mode))
                 .build()
         }
 
-        private fun modeToData(parameters: Parameters): Data {
+        private fun modeToData(mode: String): Data {
             return Data.Builder()
-                .putString(NAME_DATA_MODE,parameters.mode)
+                .putString(NAME_DATA_MODE,mode)
                 .build()
         }
 

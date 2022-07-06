@@ -7,16 +7,16 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.util.Log
+import androidx.compose.runtime.MutableState
 import androidx.work.*
 import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
-import com.example.homecontrolssystemv01.domain.Data
+import com.example.homecontrolssystemv01.domain.model.Data
 import com.example.homecontrolssystemv01.domain.DataRepository
-import com.example.homecontrolssystemv01.domain.Mode
-import com.example.homecontrolssystemv01.domain.Parameters
+import com.example.homecontrolssystemv01.presentation.enums.Mode
 
 class DataRepositoryImpl (
     private val application: Application
@@ -26,7 +26,9 @@ class DataRepositoryImpl (
     private val workManager = WorkManager.getInstance(application)
     private  val mapper = DataMapper()
     private val intentFilter = IntentFilter()
-    private var _parameters = Parameters()
+    //private var _parameters = Parameters()
+    private var _mode = Mode.STOP.name
+    private var _ssid = ""
 
     private val wifiScanReceiver = object : BroadcastReceiver() {
 
@@ -51,11 +53,14 @@ class DataRepositoryImpl (
         }
     }
 
-    override fun loadData(parameters: Parameters) {
+    override fun loadData(mode: String,ssid: String) {
 
-        Log.d("HCS_fromMainViewModel",parameters.toString())
+        _mode = mode
+        _ssid = ssid
 
-        _parameters = parameters
+        Log.d("HCS_fromMainViewModel","Mode = ${mode}, Ssid = $ssid")
+
+
 
         setSSIDtoSate("")
 
@@ -72,35 +77,42 @@ class DataRepositoryImpl (
         application.unregisterReceiver(wifiScanReceiver)
     }
 
-    override fun getSsidList():MutableList<String> {
-        val listSsid = mutableListOf<String>()
-
-        wifiManager.scanResults.map {
-            listSsid.add(it.SSID)
-        }
-
-
-        return listSsid
-
+    override fun getSsid(): MutableState<String> {
+        return DataList.ssidState
     }
+
+//    override fun getSsidList():MutableList<String> {
+//        val listSsid = mutableListOf<String>()
+//        wifiManager.scanResults.map {
+//            listSsid.add(it.SSID)
+//        }
+//        return listSsid
+//    }
+
+    override fun getSsidList():MutableList<String>{
+        return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
+    }
+
+
+
 
     fun startLoad(){
 
         val ssidFromState = loadSSIDfromState()
-        val ssidFromParameters = "\"${_parameters.ssidSet}\""
+        val ssidFromParameters = "\"${_ssid}\""
 
         if (ssidFromState == ssidFromParameters) {
 
             FirebaseFactory.removeEventListener()
 
-            createWorker(_parameters)
+            createWorker()
 
         } else {
 
             workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
             workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
 
-            if(_parameters.mode == Mode.CLIENT.name){
+            if(_mode == Mode.CLIENT.name){
                 loadFirebase()
             }
             Log.d("HCS_BroadcastReceiver","SSID unknown in mode SERVER")
@@ -123,17 +135,17 @@ class DataRepositoryImpl (
         Log.d("HCS_BroadcastReceiver","lode Firebase")
     }
 
-    private fun createWorker(parameters: Parameters){
+    private fun createWorker(){
 
 
 
-        when (parameters.mode) {
+        when (_mode) {
             Mode.SERVER.name -> {
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
                 workManager.enqueueUniquePeriodicWork(
                     RefreshDataWorker.NAME_PERIODIC,
                     ExistingPeriodicWorkPolicy.REPLACE,
-                    RefreshDataWorker.makeRequestPeriodic(parameters)
+                    RefreshDataWorker.makeRequestPeriodic(_mode)
                 )
                 Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
             }
@@ -143,14 +155,14 @@ class DataRepositoryImpl (
                 workManager.enqueueUniqueWork(
                     RefreshDataWorker.NAME_ONE_TIME,
                     ExistingWorkPolicy.REPLACE,
-                    RefreshDataWorker.makeRequestOneTime(parameters)
+                    RefreshDataWorker.makeRequestOneTime(_mode)
                 )
                 Log.d("HCS_WorkManager","Mode.CLIENT - loadDataOneTime")
             }
-            Mode.NO_MODE.name->{
+            Mode.STOP.name->{
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                Log.d("HCS_WorkManager","Mode.NO_MODE")
+                Log.d("HCS_WorkManager","Mode.STOP")
             }
         }
 

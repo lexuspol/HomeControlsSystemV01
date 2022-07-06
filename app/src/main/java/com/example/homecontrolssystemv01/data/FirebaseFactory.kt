@@ -47,12 +47,12 @@ object FirebaseFactory {
 
     fun createEventListener(){
         myRef.addValueEventListener(valueEventListener)
-        Log.d("HCS_FIREBASE", "addValueEventListener")
+        //Log.d("HCS_FIREBASE", "addValueEventListener")
     }
 
     fun removeEventListener(){
         myRef.removeEventListener(valueEventListener)
-        Log.d("HCS_FIREBASE", "removeEventListener")
+        //Log.d("HCS_FIREBASE", "removeEventListener")
     }
 
 }

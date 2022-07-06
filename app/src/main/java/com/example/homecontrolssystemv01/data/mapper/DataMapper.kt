@@ -5,7 +5,7 @@ package com.example.homecontrolssystemv01.data.mapper
 import com.example.homecontrolssystemv01.data.DataDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
-import com.example.homecontrolssystemv01.domain.Data
+import com.example.homecontrolssystemv01.domain.model.Data
 import com.google.gson.Gson
 
 
