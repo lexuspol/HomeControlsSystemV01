@@ -1,45 +1,82 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.RadioButton
-import androidx.compose.material.Text
-import androidx.compose.material.Switch
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.domain.model.Data
+import com.example.homecontrolssystemv01.domain.model.DataConnect
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.presentation.enums.DataSetting
+import com.example.homecontrolssystemv01.ui.theme.Purple200
 
 @Composable
-fun SettingData(
-    modifier: Modifier = Modifier,
+fun SettingScreen(
     listSsid:RadioButtonList,
-    dataSetting: DataSetting,
-    onValueChange: (DataSetting) -> Unit
+    dataSetting:DataSetting,
+    listData:List<Data>,
+    dataConnect:MutableState<DataConnect>,
+    onValueChange: (DataSetting) -> Unit,
+    pressOnBack: () -> Unit = {}
 
 ){
 
-    Column {
-        MySwitch(dataSetting,onValueChange)
-        Spacer(modifier = Modifier.size(20.dp))
-        Text(text = "Домашняя SSID WIFI сеть",
-            style = MaterialTheme.typography.h6,
-        modifier = Modifier.padding(16.dp))
-        MyRadioButton(listSsid,dataSetting,onValueChange)
+    Scaffold (
+        backgroundColor = MaterialTheme.colors.primarySurface,
+ //       modifier = Modifier.padding(10.dp),
+        topBar = { AppBarSetting(pressOnBack)}){
+        val modifierScaffold = Modifier.padding(it)
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colors.primarySurface)
+                .fillMaxSize()
+                .padding(10.dp)
+        ) {
+            Row() {
+                Text(text = "SSID WIFI ${dataConnect.value.ssidConnect}  ")
+                Text(text = "Mode ${dataConnect.value.modeConnect.name}")
+            }
+            Text(text = "Дата и время ${listData[0].value}")
+            Spacer(modifier = Modifier.size(20.dp))
+            MySwitch(dataSetting,onValueChange)
+            Spacer(modifier = Modifier.size(20.dp))
+            Text(text = "Домашняя SSID WIFI сеть",
+                style = MaterialTheme.typography.h6,
+ //               modifier = Modifier.padding(16.dp)
+                               )
+            MyRadioButton(listSsid,dataSetting,onValueChange)
+
+        }
+
     }
+
+
+
+
+
+
+
+
 }
 
 @Composable
 fun MySwitch(dataSetting: DataSetting,
-             onValueChange: (DataSetting) -> Unit) {
+             onValueChange: (DataSetting) -> Unit)
+{
     val checkedState = remember { mutableStateOf(true) }
     checkedState.value = dataSetting.serverMode
 
@@ -111,5 +148,20 @@ fun MyRadioButton (radioButtonList: RadioButtonList,
 
 
     }
+
+}
+
+@Composable
+fun AppBarSetting(pressOnBack: () -> Unit = {}){
+
+    TopAppBar(
+        elevation = 4.dp,
+        backgroundColor = Purple200,
+        title = {Text(stringResource(R.string.setting))},
+        navigationIcon = {
+            IconButton(onClick = {pressOnBack()}) {
+                Icon(Icons.Filled.ArrowBack, null)
+            }
+        })
 
 }

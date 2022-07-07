@@ -14,7 +14,7 @@ import com.example.homecontrolssystemv01.domain.model.DataConnect
 import com.example.homecontrolssystemv01.ui.theme.Purple200
 
 @Composable
-fun HomeData(
+fun HomeDataScreen(
     modifier: Modifier = Modifier,
     listData:List<Data>,
     dataConnect:MutableState<DataConnect>
@@ -25,14 +25,9 @@ fun HomeData(
             .padding(10.dp)
     ){
         if (listData.isNotEmpty()) {
-            Row() {
-                Text(text = "SSID WIFI ${dataConnect.value.ssidConnect}  ")
-                Text(text = "Mode ${dataConnect.value.modeConnect.name}")
-            }
-            Text(text = "Дата и время ${listData[0].value}")
 
-            Spacer(modifier = Modifier.size(20.dp))
-            Text(text = "Наружная температура ${listData[1].value} С",
+
+            Text(text = "${listData[1].description}   ${listData[1].value} С",
                 style = MaterialTheme.typography.h6)
             Text(text = "Входная дверь ${listData[2].value}",
                 style = MaterialTheme.typography.h6)
@@ -58,39 +53,6 @@ fun HomeData(
                 Text(text = "${listData[16].value} %       ")
                 Text(text = "${listData[18].value} %       ")
                 Text(text = "${listData[20].value} %       ")
-            }
-
-                Button(
-        onClick = {
-            //viewModel.savePref()
-                  },
-        Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Icon(
-            Icons.Filled.Done,
-            contentDescription = null,
-            modifier = Modifier.size(ButtonDefaults.IconSize)
-        )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("Load")
-    }
-            Button(
-                onClick = {
-                    //viewModel.savePref()
-                },
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Done,
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                )
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("Load")
             }
 
         }

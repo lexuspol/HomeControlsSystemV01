@@ -2,11 +2,13 @@ package com.example.homecontrolssystemv01.presentation
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
+import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.repository.DataRepositoryImpl
 import com.example.homecontrolssystemv01.presentation.enums.KeySetting
@@ -18,7 +20,9 @@ import com.example.homecontrolssystemv01.presentation.enums.DataSetting
 
 class MainViewModel(application: Application): AndroidViewModel(application) {
 
-    private val repository = DataRepositoryImpl(application)
+    private val aplic = application
+
+    private val repository = DataRepositoryImpl(aplic)
     private val loadData = LoadDataUseCase(repository)
     private val getDataList = GetDataListUseCase(repository)
     private val closeConnect = CloseConnectUseCase(repository)
@@ -28,7 +32,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private var _dataSetting = DataSetting()
 
-    private val sharedPref = application.getSharedPreferences("myPref", Context.MODE_PRIVATE)
+    private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
 
     private fun createConnectSetting():ConnectSetting{
         return ConnectSetting(_dataSetting.ssid,_dataSetting.serverMode
@@ -37,8 +41,23 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun getDataListUI(): List<Data> {
         _isLoading.value = getDataList().isEmpty() // переделать
-        return getDataList()
+
+ //       Log.d("HCS_test",R.array.data.toString())
+
+        val list = getDataList()
+        val listDescription = aplic.resources.getStringArray(R.array.data)
+
+        list.map { data->
+            listDescription.forEach {item->
+                val id = item.substringBefore('|')
+                val description = item.substringAfter('|')
+                if (id==data.id.toString()) data.description=description
+            }
+            }
+        return list
     }
+
+
 
     fun getDataSettingUI():DataSetting{return _dataSetting}
 

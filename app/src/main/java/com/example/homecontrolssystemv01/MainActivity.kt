@@ -1,13 +1,14 @@
 package com.example.homecontrolssystemv01
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.homecontrolssystemv01.presentation.MainViewModel
-import com.example.homecontrolssystemv01.presentation.screen.Main
+import com.example.homecontrolssystemv01.presentation.screen.MainScreen
 import com.example.homecontrolssystemv01.ui.theme.HomeControlsSystemV01Theme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +22,8 @@ class MainActivity : ComponentActivity() {
             HomeControlsSystemV01Theme {
                 //Surface(
                // ) {
-                    Main(viewModel)
+                    MainScreen(viewModel)
+                Log.d("HCS_MainActivity", "start MainScreen(viewModel)")
               //  }
             }
         }

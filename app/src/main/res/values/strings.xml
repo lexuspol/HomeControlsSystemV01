@@ -2,5 +2,19 @@
     <string name="app_name">Home Control System</string>
     <string name="menu_home">HOME</string>
     <string name="menu_list">LIST</string>
-    <string name="menu_setting">SET</string>
+    <string name="menu_control">CONTROL</string>
+    <string name="setting">Setting</string>
+    <string-array name="data">
+        <item>1|Наружная температура</item>
+        <item>2|Входная дверь</item>
+        <item>3|Дверь на террасу</item>
+        <item>6|Температура пола</item>
+        <item>7|Подача на теплый пол</item>
+        <item>8|Обратка на теплый пол</item>
+        <item>9|Подача на радиаторы</item>
+        <item>10|Обратка на радиаторы</item>
+        <item>11|Термператора Termix</item>
+        <item>12|Температура бойлера</item>
+    </string-array>
+
 </resources>
