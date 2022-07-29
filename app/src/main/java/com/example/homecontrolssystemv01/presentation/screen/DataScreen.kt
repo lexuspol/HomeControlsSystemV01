@@ -72,7 +72,9 @@ fun DataScreen(viewModel: MainViewModel,
                 when (destination) {
                     DataHomeTab.HOME -> HomeDataScreen(modifier, dataList,dataConnect)
                     DataHomeTab.LIST -> ListData(modifier, dataList)
-                    DataHomeTab.CONTROL -> ControlDataScreen()
+                    DataHomeTab.CONTROL -> ControlDataScreen(dataList,onValueChange = {
+                        viewModel.putControlUI(it)
+                    })
 //                    DataHomeTab.SETTING -> SettingData(modifier,listSsid, dataSetting,
 //                        onValueChange = {
 //                        viewModel.setDataSetting(it)

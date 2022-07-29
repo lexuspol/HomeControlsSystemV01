@@ -31,6 +31,7 @@ fun ListData(
 //                    .background(MaterialTheme.colors.primarySurface)
             ) {
                 items(listData){ data ->
+                    //MessageRow(data)
                     if (data.description!="") MessageRow(data)
                 }
             }
@@ -82,15 +83,20 @@ fun MessageRow(data: Data) {
             ) {
                 Text(
                     text = data.description,
-                    modifier = Modifier.weight(2f),
+                    modifier = Modifier.weight(4f),
                     style = MaterialTheme.typography.subtitle1
                 )
                 Text(
                     text = data.value.toString(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(2f),
                     textAlign = TextAlign.End,
                     style = MaterialTheme.typography.subtitle1,
                     fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = data.unit,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.subtitle1
                 )
             }
 //                Row(

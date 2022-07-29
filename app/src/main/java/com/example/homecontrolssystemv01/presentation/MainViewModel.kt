@@ -28,6 +28,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val closeConnect = CloseConnectUseCase(repository)
     private val getSsidList = GetListSsidUseCase(repository)
     private val getDataConnect = GetDataConnectUseCase(repository)
+    private val putControl = PutControlUseCase(repository)
 
 
     private var _dataSetting = DataSetting()
@@ -37,6 +38,10 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private fun createConnectSetting():ConnectSetting{
         return ConnectSetting(_dataSetting.ssid,_dataSetting.serverMode
         )
+    }
+
+    fun putControlUI(controlMode:Int){
+        putControl(controlMode)
     }
 
     fun getDataListUI(): List<Data> {
@@ -50,8 +55,12 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         list.map { data->
             listDescription.forEach {item->
                 val id = item.substringBefore('|')
-                val description = item.substringAfter('|')
-                if (id==data.id.toString()) data.description=description
+                val description = item.substringAfter('|').substringBefore('^')
+                val unit = item.substringAfter('^')
+                if (id==data.id.toString()) {
+                    data.description=description
+                    data.unit=unit
+                }
             }
             }
         return list

@@ -5,16 +5,22 @@
     <string name="menu_control">CONTROL</string>
     <string name="setting">Setting</string>
     <string-array name="data">
-        <item>1|Наружная температура</item>
-        <item>2|Входная дверь</item>
-        <item>3|Дверь на террасу</item>
-        <item>6|Температура пола</item>
-        <item>7|Подача на теплый пол</item>
-        <item>8|Обратка на теплый пол</item>
-        <item>9|Подача на радиаторы</item>
-        <item>10|Обратка на радиаторы</item>
-        <item>11|Термператора Termix</item>
-        <item>12|Температура бойлера</item>
+        <item>1|Наружная температура^ C</item>
+        <item>2|Входная дверь^  </item>
+        <item>3|Дверь на террасу^  </item>
+        <item>6|Температура пола^ C</item>
+        <item>7|Подача на теплый пол^ C</item>
+        <item>8|Обратка на теплый пол^ C</item>
+        <item>9|Подача на радиаторы^ C</item>
+        <item>10|Обратка на радиаторы^ C</item>
+        <item>11|Термператора Termix^ C</item>
+        <item>12|Температура бойлера^ C</item>
+        <item>13|Температура в спальной^ C</item>
+        <item>14|Влажность в спальной^ %</item>
+        <item>23|Свет в спальной^  </item>
+        <item>24|Свет в детской^  </item>
+        <item>27|Свет на улице^  </item>
+        <item>25|Свет в кинозале^  </item>
     </string-array>
 
 </resources>

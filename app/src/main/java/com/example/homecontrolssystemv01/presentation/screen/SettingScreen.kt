@@ -2,6 +2,8 @@ package com.example.homecontrolssystemv01.presentation.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -59,6 +61,7 @@ fun SettingScreen(
  //               modifier = Modifier.padding(16.dp)
                                )
             MyRadioButton(listSsid,dataSetting,onValueChange)
+            MyListData(listData)
 
         }
 
@@ -71,6 +74,27 @@ fun SettingScreen(
 
 
 
+}
+
+@Composable
+fun MyListData(listData:List<Data>) {
+    LazyColumn {
+        items(listData) { data ->
+            Column() {
+                Text(text = data.description)
+                Row() {
+                    Text(text = data.id.toString())
+                    Spacer(modifier = Modifier.size(5.dp))
+                    Text(text = data.name.toString())
+                    Spacer(modifier = Modifier.size(5.dp))
+                    Text(text = data.value.toString())
+                }
+                Spacer(modifier = Modifier.size(10.dp))
+
+            }
+
+        }
+    }
 }
 
 @Composable

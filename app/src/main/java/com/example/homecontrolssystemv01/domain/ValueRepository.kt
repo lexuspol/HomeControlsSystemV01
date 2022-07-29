@@ -20,5 +20,7 @@ interface DataRepository {
 
    fun getSsidList():MutableList<String>
 
+   fun putControl(controlMode:Int)
+
 
 }

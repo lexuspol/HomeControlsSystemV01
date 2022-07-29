@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.work.*
@@ -14,6 +15,8 @@ import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
+import com.example.homecontrolssystemv01.data.network.ApiFactory
+import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.model.Data
 import com.example.homecontrolssystemv01.domain.DataRepository
@@ -21,6 +24,7 @@ import com.example.homecontrolssystemv01.domain.model.DataConnect
 import com.example.homecontrolssystemv01.domain.model.ModeConnect
 
 class DataRepositoryImpl (private val application: Application): DataRepository {
+
 
     private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val workManager = WorkManager.getInstance(application)
@@ -44,6 +48,9 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
     }
 
     override fun getDataList(): List<Data>{
+
+        //DataList.movieListResponse.add
+
         return DataList.movieListResponse.map {
             mapper.mapDataToEntity(it)
         }
@@ -54,6 +61,8 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
     }
 
     override fun loadData(connectSetting:ConnectSetting) {
+
+
 
         _connectSetting = connectSetting
 
@@ -67,7 +76,10 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
 
     }
 
-    override fun closeConnect() {application.unregisterReceiver(wifiScanReceiver)}
+    override fun closeConnect() {
+        application.unregisterReceiver(wifiScanReceiver)
+
+    }
 
     override fun getSsid(): MutableState<String> = DataList.ssidState
 
@@ -75,7 +87,22 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
         return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
     }
 
+    override fun putControl(controlMode:Int) {
+
+        workManager.enqueueUniqueWork(
+            ControlDataWorker.NAME_WORKER_CONTROL,
+            ExistingWorkPolicy.REPLACE,
+            ControlDataWorker.makeRequestOneTime(controlMode))
+    }
+
+
+
+
+
     private fun startLoad(ssidFromWiFi:String){
+
+
+
 
         val ssidFromParameters = "\"${_connectSetting.ssid}\""
 
@@ -90,6 +117,15 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
                 }
                 (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
                     dataConnect.modeConnect = ModeConnect.LOCAL
+//                    val status = workManager.getWorkInfosByTag(RefreshDataWorker.NAME_PERIODIC).get()
+//                    if (status.isEmpty()) {
+//                        Log.d("HCS_BroadcastReceiver","state work = pusto")
+//                    }else{
+//                        status[0].state.name
+//                        Log.d("HCS_BroadcastReceiver","state work = ${status.toString()}")
+//                    }
+
+
                     workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
                     FirebaseFactory.removeEventListener()
                     createWorker()
@@ -131,6 +167,7 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
                 RefreshDataWorker.makeRequestOneTime(_connectSetting.serverMode)
             )
             Log.d("HCS_WorkManager","Mode.CLIENT - loadDataOneTime")
+
         }
     }
 

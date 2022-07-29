@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
                 //Surface(
                // ) {
                     MainScreen(viewModel)
-                Log.d("HCS_MainActivity", "start MainScreen(viewModel)")
+               // Log.d("HCS_MainActivity", "start MainScreen(viewModel)")
               //  }
             }
         }

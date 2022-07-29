@@ -40,6 +40,7 @@ class RefreshDataWorker(
         try {
 
             val jsonContainer = apiService.getData()
+
             val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
 
             Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
@@ -65,7 +66,8 @@ class RefreshDataWorker(
 
         const val NAME_PERIODIC = "RefreshDataWorker_PERIODIC"
         const val NAME_ONE_TIME = "RefreshDataWorker_ONE_TIME"
-        const val NAME_DATA_MODE = "MODE"
+        const val NAME_DATA_MODE = "Server_MODE"
+        const val NAME_DATA_CONTROL_MODE = "Control_MODE"
 
 
         fun makeRequestPeriodic(serverMode: Boolean): PeriodicWorkRequest {
