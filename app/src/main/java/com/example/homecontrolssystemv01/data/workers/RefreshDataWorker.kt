@@ -3,8 +3,9 @@ package com.example.homecontrolssystemv01.data.workers
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.example.homecontrolssystemv01.data.DataList
 import com.example.homecontrolssystemv01.data.FirebaseFactory
+import com.example.homecontrolssystemv01.data.database.AppDatabase
+import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import kotlinx.coroutines.delay
@@ -19,123 +20,126 @@ class RefreshDataWorker(
 
     private val apiService = ApiFactory.apiService
 
+    private val dataDao = AppDatabase.getInstance(context).dataDao()
+
     private val mapper = DataMapper()
 
-    private val serverMode = workerParameters.inputData.getBoolean(NAME_DATA_MODE,false)
+    private val serverMode = workerParameters.inputData.getBoolean(NAME_SERVER_MODE,false)
+    private val remoteMode = workerParameters.inputData.getBoolean(NAME_REMOTE_MODE,false)
 
         override suspend fun doWork(): Result {
 
-            var resultWork:Result
+            var resultWork: Result
 
             try {
-                do{
-                    val jsonContainer = apiService.getData()
 
-                    val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
+                if (remoteMode) {
+                    remoteData()
+                } else {
+                    dataDao.insertValue(apiServiceAndDatabase())
+                }
 
-                    Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
-
-                    val dataDbModelList = dataDtoList.map {
-                        mapper.valueDtoToDbModel(it)
-                    }
-
-                    DataList.movieListResponse = dataDbModelList
-
-                    if (serverMode){
-                        FirebaseFactory.setDataToFirebase(dataDbModelList)
-                    }else{
+                if (serverMode) {
+                    dataDao.insertValue(apiServiceAndDatabase())
+                    FirebaseFactory.setDataToFirebase(apiServiceAndDatabase())
+                } else {
+                    while (true) {
                         delay(30000)
+                        apiServiceAndDatabase()
                     }
+                }
 
-                    resultWork = Result.success()
+                resultWork = Result.success()
 
-                }while (!serverMode)
-
-
-
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 Log.d("HCS_RefreshDataWorker", e.toString())
                 resultWork = Result.retry()
             }
 
             return resultWork
+        }
 
-//            if (serverMode) {
-//                return workStart()
-//            } else{
+
+//            try {
+//                do{
 //
-//                while (true){
-//                    workStart()
-//                    delay(30000)
-//                }
+//                    if (serverMode){
+//                        FirebaseFactory.setDataToFirebase(apiServiceAndDatabase())
+//                    }else{
+//                        if (remoteMode){
+//                            Log.d("HCS_RefreshDataWorker", "e.toString()")
+//                        }else {
+//                            apiServiceAndDatabase()
+//                            delay(10000)
+//                        }
+//                    }
 //
+//                    resultWork = Result.success()
+//
+//                }while (!serverMode)
+//
+//
+//
+//            } catch (e: Exception){
+//                Log.d("HCS_RefreshDataWorker", e.toString())
+//                resultWork = Result.retry()
 //            }
 
 
-    }
-
-    private suspend fun workStart():Result{
-
-        try {
-
-            val jsonContainer = apiService.getData()
-
-            val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
-
-            Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
-
-            val dataDbModelList = dataDtoList.map {
-                mapper.valueDtoToDbModel(it)
-            }
-
-            DataList.movieListResponse = dataDbModelList
-
-            if (serverMode){
-                FirebaseFactory.setDataToFirebase(dataDbModelList)
-            }
-
-            return Result.success()
 
 
-        } catch (e: Exception) {
-            Log.d("HCS_RefreshDataWorker", e.toString())
-            return Result.retry()
+
+    private suspend fun apiServiceAndDatabase():List<DataDbModel>{
+
+        val jsonContainer = apiService.getData()
+        val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
+        Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+        val dataDbModelList = dataDtoList.map {
+            mapper.valueDtoToDbModel(it)
         }
 
+        return dataDbModelList
     }
+
+    private fun remoteData(){
+        Log.d("HCS_RefreshDataWorker","Firebase write")
+    }
+
 
     companion object {
 
         const val NAME_PERIODIC = "RefreshDataWorker_PERIODIC"
         const val NAME_ONE_TIME = "RefreshDataWorker_ONE_TIME"
-        const val NAME_DATA_MODE = "Server_MODE"
-        const val NAME_DATA_CONTROL_MODE = "Control_MODE"
+        const val NAME_SERVER_MODE = "Server_MODE"
+        const val NAME_REMOTE_MODE = "Remote_MODE"
 
 
-        fun makeRequestPeriodic(serverMode: Boolean): PeriodicWorkRequest {
+
+        fun makeRequestPeriodic(serverMode: Boolean, remoteMode:Boolean): PeriodicWorkRequest {
             return PeriodicWorkRequestBuilder<RefreshDataWorker>(20,
                 TimeUnit.MINUTES)
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(serverMode))
+                .setInputData(modeToData(serverMode,remoteMode))
                 .build()
         }
 
-        fun makeRequestOneTime(serverMode: Boolean): OneTimeWorkRequest {
+        fun makeRequestOneTime(serverMode: Boolean, remoteMode:Boolean): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(serverMode))
+                .setInputData(modeToData(serverMode,remoteMode))
                 .build()
         }
 
-        private fun modeToData(serverMode: Boolean): Data {
+        private fun modeToData(serverMode: Boolean, remoteMode:Boolean): Data {
             return Data.Builder()
-                .putBoolean(NAME_DATA_MODE,serverMode)
+                .putBoolean(NAME_SERVER_MODE,serverMode)
+                .putBoolean(NAME_REMOTE_MODE,remoteMode)
                 .build()
         }
 
         private fun makeConstraints (): Constraints{
             return Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED)
+                //.setRequiredNetworkType(NetworkType.UNMETERED)
                 .build()
 
         }

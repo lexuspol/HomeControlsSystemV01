@@ -8,6 +8,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.repository.DataRepositoryImpl
@@ -32,7 +33,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val putControl = PutControlUseCase(repository)
     private val getBatteryInfo = BatteryMonitor(aplic)
 
-
     private var _dataSetting = DataSetting()
 
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
@@ -46,37 +46,13 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         putControl(controlMode)
     }
 
-    fun getDataListUI(): List<Data> {
-        _isLoading.value = getDataList().isEmpty() // переделать
+    fun getDataListUI(): LiveData<List<Data>> = getDataList()
 
- //       Log.d("HCS_test",R.array.data.toString())
+    fun getDataSettingUI():DataSetting = _dataSetting
 
-        val list = getDataList()
-        val listDescription = aplic.resources.getStringArray(R.array.data)
+    fun getDataConnectUI():MutableState<DataConnect> = getDataConnect()
 
-        list.map { data->
-            listDescription.forEach {item->
-                val id = item.substringBefore('|')
-                val description = item.substringAfter('|').substringBefore('^')
-                val unit = item.substringAfter('^')
-                if (id==data.id.toString()) {
-                    data.description=description
-                    data.unit=unit
-                }
-            }
-            }
-        return list
-    }
-
-
-
-    fun getDataSettingUI():DataSetting{return _dataSetting}
-
-    fun getDataConnectUI():MutableState<DataConnect>{return getDataConnect()}
-
-    fun getBatteryInfoUI():String{
-        return getBatteryInfo.getBatteryPct().toString()
-    }
+    fun getBatteryInfoUI():String = getBatteryInfo.getBatteryPct().toString()
 
     fun setDataSetting(dataSetting: DataSetting){
         _dataSetting = dataSetting

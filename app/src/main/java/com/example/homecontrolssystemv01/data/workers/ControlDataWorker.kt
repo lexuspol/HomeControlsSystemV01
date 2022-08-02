@@ -40,11 +40,11 @@ class ControlDataWorker(
 
                 Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
 
-                val dataDbModelList = dataDtoList.map {
-                    mapper.valueDtoToDbModel(it)
-                }
+                //val dataDbModelList = dataDtoList.map {
+                //    mapper.valueDtoToDbModel(it)
+               // }
 
-                DataList.movieListResponse = dataDbModelList
+                //DataList.movieListResponse = dataDbModelList
 
             } catch (e: Exception) {
                 Log.d("HCS_RefreshDataWorker", e.toString())

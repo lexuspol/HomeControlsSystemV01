@@ -22,10 +22,14 @@ import com.example.homecontrolssystemv01.ui.theme.Purple700
 @Composable
 fun ListData(
     modifierMain: Modifier = Modifier,
-    listData:List<Data>
+    listData:List<Data>?
 ){
-        if (listData.isNotEmpty()) {
-
+        if (listData.isNullOrEmpty()) {
+            Text(
+                text = "NO Data",
+                style = MaterialTheme.typography.h6
+            )
+        } else{
             LazyColumn(
 //                modifier = Modifier
 //                    .background(MaterialTheme.colors.primarySurface)

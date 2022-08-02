@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.domain.model.Data
@@ -16,7 +17,7 @@ import com.example.homecontrolssystemv01.ui.theme.Purple200
 @Composable
 fun HomeDataScreen(
     modifier: Modifier = Modifier,
-    listData:List<Data>,
+    listData: List<Data>?,
     batteryInfo:String,
     dataConnect:MutableState<DataConnect>
 
@@ -25,43 +26,58 @@ fun HomeDataScreen(
         modifier = Modifier
             .padding(10.dp)
     ){
-        if (listData.isNotEmpty()) {
+        if (listData.isNullOrEmpty()) {
+            Text(
+                text = "NO Data",
+                style = MaterialTheme.typography.h6
+            )
+        }else {
 
-            Text(text = "Время - ${listData[0].value}",
-                style = MaterialTheme.typography.h6)
-            Text(text = "${listData[1].description} - ${listData[1].value} С",
-                style = MaterialTheme.typography.h6)
-            Text(text = "Входная дверь - ${listData[2].value}",
-                style = MaterialTheme.typography.h6)
-            Text(text = "Дверь на террасу - ${listData[3].value}",
-                style = MaterialTheme.typography.h6)
-            Text(text = "Уровень батареи - $batteryInfo %",
-                style = MaterialTheme.typography.h6)
+            Text(
+                text = "Время - ${listData[0].value}",
+                style = MaterialTheme.typography.h6
+            )
+            Text(
+                text = "${listData[1].description} - ${listData[1].value} С",
+                style = MaterialTheme.typography.h6
+            )
+            Text(
+                text = "Входная дверь - ${listData[2].value}",
+                style = MaterialTheme.typography.h6
+            )
+            Text(
+                text = "Дверь на террасу - ${listData[3].value}",
+                style = MaterialTheme.typography.h6
+            )
+            Text(
+                text = "Уровень батареи - $batteryInfo %",
+                style = MaterialTheme.typography.h6
+            )
 
             Spacer(modifier = Modifier.size(20.dp))
 
 
-            Row{
+            Row {
                 Text(text = "Кухня  ")
                 Text(text = "Спальная  ")
                 Text(text = "Детская  ")
                 Text(text = "Кинозал")
             }
 
-            Row{
+            Row {
                 Text(text = "${listData[13].value} С       ")
                 Text(text = "${listData[15].value} С       ")
                 Text(text = "${listData[17].value} С       ")
                 Text(text = "${listData[19].value} С       ")
             }
-            Row{
+            Row {
                 Text(text = "${listData[14].value} %       ")
                 Text(text = "${listData[16].value} %       ")
                 Text(text = "${listData[18].value} %       ")
                 Text(text = "${listData[20].value} %       ")
             }
+        }
 
         }
     }
 
-}

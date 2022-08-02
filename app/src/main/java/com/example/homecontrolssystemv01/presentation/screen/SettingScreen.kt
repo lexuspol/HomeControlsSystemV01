@@ -30,7 +30,7 @@ import com.example.homecontrolssystemv01.ui.theme.Purple200
 fun SettingScreen(
     listSsid:RadioButtonList,
     dataSetting:DataSetting,
-    listData:List<Data>,
+    listData:List<Data>?,
     dataConnect:MutableState<DataConnect>,
     onValueChange: (DataSetting) -> Unit,
     pressOnBack: () -> Unit = {}

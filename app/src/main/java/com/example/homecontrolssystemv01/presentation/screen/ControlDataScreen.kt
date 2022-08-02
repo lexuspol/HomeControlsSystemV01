@@ -14,12 +14,22 @@ import com.example.homecontrolssystemv01.ui.theme.Purple200
 import com.example.homecontrolssystemv01.ui.theme.Purple700
 
 @Composable
-fun ControlDataScreen(listData:List<Data>,onValueChange: (Int) -> Unit){
+fun ControlDataScreen(listData:List<Data>?,onValueChange: (Int) -> Unit){
 
-    Column() {
-        ButtonLight(listData = listData, index = 23, onValueChange)
-        ButtonLight(listData = listData, index = 24, onValueChange)
+    if (listData.isNullOrEmpty()) {
+        Text(
+            text = "NO Data",
+            style = MaterialTheme.typography.h6
+        )
+    } else{
+        Column() {
+            ButtonLight(listData = listData, index = 23, onValueChange)
+            ButtonLight(listData = listData, index = 24, onValueChange)
+        }
+
     }
+
+
 }
 
 @Composable

@@ -2,7 +2,7 @@ package com.example.homecontrolssystemv01.data.mapper
 
 
 
-import com.example.homecontrolssystemv01.data.DataDbModel
+import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
 import com.example.homecontrolssystemv01.domain.model.Data
@@ -31,12 +31,30 @@ class DataMapper {
     )
 
 
-        fun mapDataToEntity(snapshot:DataDbModel) = Data(
-        id = snapshot.id,
-        value = if (snapshot.name == "lastTimeUpdate") convertDateServerToDateUI(snapshot.value) else snapshot.value,
-        name = snapshot.name
+        fun mapDataToEntity(dataDb: DataDbModel,listDescription:Array<String>):Data {
+            var description:String = ""
+            var unit:String = ""
 
-    )
+            listDescription.forEach { item ->
+                if (item.substringBefore('|')==dataDb.id.toString()) {
+                    description = item.substringAfter('|').substringBefore('^')
+                    unit = item.substringAfter('^')
+                }
+            }
+
+            return Data(
+                id = dataDb.id,
+                value = if(dataDb.name == "lastTimeUpdate") convertDateServerToDateUI(dataDb.value) else dataDb.value,
+                name = dataDb.name,
+                type = dataDb.type,
+                description = description,
+                unit = unit)
+        }
+
+
+
+
+
 
     private fun convertDateServerToDateUI(date:String?):String{
         if (date == null) return ""

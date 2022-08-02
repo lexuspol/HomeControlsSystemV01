@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -9,7 +10,7 @@ import com.example.homecontrolssystemv01.presentation.MainViewModel
 @Composable
 fun MainScreen(viewModel:MainViewModel) {
 
-    val dataList = viewModel.getDataListUI()
+    val dataList = viewModel.getDataListUI().observeAsState().value
     val dataConnect = viewModel.getDataConnectUI()
     val listSsid = viewModel.getSsidListForRadioButton()
     val dataSetting = viewModel.getDataSettingUI()

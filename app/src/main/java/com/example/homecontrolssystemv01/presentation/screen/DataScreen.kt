@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.ui.theme.Purple200
 import com.example.homecontrolssystemv01.R
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,7 @@ import com.example.homecontrolssystemv01.presentation.MainViewModel
 fun DataScreen(viewModel: MainViewModel,
                selectSetting: () -> Unit){
 
-    val dataList = viewModel.getDataListUI()
+    val dataList = viewModel.getDataListUI().observeAsState().value
     val dataConnect = viewModel.getDataConnectUI()
 
     val isLoading: Boolean by viewModel.isLoading
