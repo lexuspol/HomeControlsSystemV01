@@ -70,7 +70,7 @@ fun DataScreen(viewModel: MainViewModel,
             val modifier = Modifier.padding(innerPadding)
             Crossfade(selectedTab) { destination ->
                 when (destination) {
-                    DataHomeTab.HOME -> HomeDataScreen(modifier, dataList,dataConnect)
+                    DataHomeTab.HOME -> HomeDataScreen(modifier, dataList,viewModel.getBatteryInfoUI(),dataConnect)
                     DataHomeTab.LIST -> ListData(modifier, dataList)
                     DataHomeTab.CONTROL -> ControlDataScreen(dataList,onValueChange = {
                         viewModel.putControlUI(it)

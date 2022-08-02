@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.repository.DataRepositoryImpl
+import com.example.homecontrolssystemv01.domain.BatteryMonitor
 import com.example.homecontrolssystemv01.presentation.enums.KeySetting
 import com.example.homecontrolssystemv01.domain.model.Data
 import com.example.homecontrolssystemv01.domain.model.DataConnect
@@ -29,6 +30,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val getSsidList = GetListSsidUseCase(repository)
     private val getDataConnect = GetDataConnectUseCase(repository)
     private val putControl = PutControlUseCase(repository)
+    private val getBatteryInfo = BatteryMonitor(aplic)
 
 
     private var _dataSetting = DataSetting()
@@ -71,6 +73,10 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     fun getDataSettingUI():DataSetting{return _dataSetting}
 
     fun getDataConnectUI():MutableState<DataConnect>{return getDataConnect()}
+
+    fun getBatteryInfoUI():String{
+        return getBatteryInfo.getBatteryPct().toString()
+    }
 
     fun setDataSetting(dataSetting: DataSetting){
         _dataSetting = dataSetting

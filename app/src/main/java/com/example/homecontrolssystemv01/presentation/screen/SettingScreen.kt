@@ -52,7 +52,7 @@ fun SettingScreen(
                 Text(text = "SSID WIFI ${dataConnect.value.ssidConnect}  ")
                 Text(text = "Mode ${dataConnect.value.modeConnect.name}")
             }
-            Text(text = "Дата и время ${listData[0].value}")
+            //Text(text = "Дата и время ${listData[0].value}")
             Spacer(modifier = Modifier.size(20.dp))
             MySwitch(dataSetting,onValueChange)
             Spacer(modifier = Modifier.size(20.dp))
@@ -61,7 +61,7 @@ fun SettingScreen(
  //               modifier = Modifier.padding(16.dp)
                                )
             MyRadioButton(listSsid,dataSetting,onValueChange)
-            MyListData(listData)
+            //MyListData(listData)
 
         }
 

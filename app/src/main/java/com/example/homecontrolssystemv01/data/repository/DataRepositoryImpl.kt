@@ -155,7 +155,7 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
             workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
             workManager.enqueueUniquePeriodicWork(
                 RefreshDataWorker.NAME_PERIODIC,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode)
             )
             Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")

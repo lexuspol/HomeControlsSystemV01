@@ -25,17 +25,56 @@ class RefreshDataWorker(
 
         override suspend fun doWork(): Result {
 
-            if (serverMode) workStart() else{
-                while (true){
-                    workStart()
-                    delay(30000)
-                }
+            var resultWork:Result
+
+            try {
+                do{
+                    val jsonContainer = apiService.getData()
+
+                    val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
+
+                    Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+
+                    val dataDbModelList = dataDtoList.map {
+                        mapper.valueDtoToDbModel(it)
+                    }
+
+                    DataList.movieListResponse = dataDbModelList
+
+                    if (serverMode){
+                        FirebaseFactory.setDataToFirebase(dataDbModelList)
+                    }else{
+                        delay(30000)
+                    }
+
+                    resultWork = Result.success()
+
+                }while (!serverMode)
+
+
+
+            } catch (e: Exception){
+                Log.d("HCS_RefreshDataWorker", e.toString())
+                resultWork = Result.retry()
             }
 
-            return Result.success()
+            return resultWork
+
+//            if (serverMode) {
+//                return workStart()
+//            } else{
+//
+//                while (true){
+//                    workStart()
+//                    delay(30000)
+//                }
+//
+//            }
+
+
     }
 
-    private suspend fun workStart(){
+    private suspend fun workStart():Result{
 
         try {
 
@@ -55,9 +94,12 @@ class RefreshDataWorker(
                 FirebaseFactory.setDataToFirebase(dataDbModelList)
             }
 
+            return Result.success()
+
 
         } catch (e: Exception) {
             Log.d("HCS_RefreshDataWorker", e.toString())
+            return Result.retry()
         }
 
     }
@@ -71,7 +113,7 @@ class RefreshDataWorker(
 
 
         fun makeRequestPeriodic(serverMode: Boolean): PeriodicWorkRequest {
-            return PeriodicWorkRequestBuilder<RefreshDataWorker>(15,
+            return PeriodicWorkRequestBuilder<RefreshDataWorker>(20,
                 TimeUnit.MINUTES)
                 .setConstraints(makeConstraints())
                 .setInputData(modeToData(serverMode))
@@ -93,7 +135,7 @@ class RefreshDataWorker(
 
         private fun makeConstraints (): Constraints{
             return Constraints.Builder()
-                //.setRequiredNetworkType(NetworkType.UNMETERED)
+                .setRequiredNetworkType(NetworkType.UNMETERED)
                 .build()
 
         }

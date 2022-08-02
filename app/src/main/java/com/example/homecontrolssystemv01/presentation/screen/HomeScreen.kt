@@ -17,6 +17,7 @@ import com.example.homecontrolssystemv01.ui.theme.Purple200
 fun HomeDataScreen(
     modifier: Modifier = Modifier,
     listData:List<Data>,
+    batteryInfo:String,
     dataConnect:MutableState<DataConnect>
 
 ){
@@ -26,14 +27,19 @@ fun HomeDataScreen(
     ){
         if (listData.isNotEmpty()) {
 
+            Text(text = "Время - ${listData[0].value}",
+                style = MaterialTheme.typography.h6)
+            Text(text = "${listData[1].description} - ${listData[1].value} С",
+                style = MaterialTheme.typography.h6)
+            Text(text = "Входная дверь - ${listData[2].value}",
+                style = MaterialTheme.typography.h6)
+            Text(text = "Дверь на террасу - ${listData[3].value}",
+                style = MaterialTheme.typography.h6)
+            Text(text = "Уровень батареи - $batteryInfo %",
+                style = MaterialTheme.typography.h6)
 
-            Text(text = "${listData[1].description}   ${listData[1].value} С",
-                style = MaterialTheme.typography.h6)
-            Text(text = "Входная дверь ${listData[2].value}",
-                style = MaterialTheme.typography.h6)
-            Text(text = "Дверь на террасу ${listData[3].value}",
-                style = MaterialTheme.typography.h6)
             Spacer(modifier = Modifier.size(20.dp))
+
 
             Row{
                 Text(text = "Кухня  ")
