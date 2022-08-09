@@ -1,11 +1,8 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -71,7 +68,7 @@ fun DataScreen(viewModel: MainViewModel,
             val modifier = Modifier.padding(innerPadding)
             Crossfade(selectedTab) { destination ->
                 when (destination) {
-                    DataHomeTab.HOME -> HomeDataScreen(modifier, dataList,viewModel.getBatteryInfoUI(),dataConnect)
+                    DataHomeTab.HOME -> HomeScreen(modifier, dataList,viewModel.getBatteryInfoUI(),dataConnect)
                     DataHomeTab.LIST -> ListData(modifier, dataList)
                     DataHomeTab.CONTROL -> ControlDataScreen(dataList,onValueChange = {
                         viewModel.putControlUI(it)

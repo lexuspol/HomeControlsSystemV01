@@ -3,12 +3,17 @@ package com.example.homecontrolssystemv01.data.workers
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
+import com.example.homecontrolssystemv01.data.repository.DataRepositoryImpl
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 
 
 import java.util.concurrent.TimeUnit
@@ -22,74 +27,105 @@ class RefreshDataWorker(
 
     private val dataDao = AppDatabase.getInstance(context).dataDao()
 
+    private val myRef = Firebase.database(DataRepositoryImpl.FIREBASE_URL).getReference(
+        DataRepositoryImpl.FIREBASE_PATH
+    )
+
     private val mapper = DataMapper()
 
     private val serverMode = workerParameters.inputData.getBoolean(NAME_SERVER_MODE,false)
     private val remoteMode = workerParameters.inputData.getBoolean(NAME_REMOTE_MODE,false)
 
+    private val delayTime:Long = 500//milliSeconds
+    private val periodTime:Long = 10//seconds
+    private val limitErrorCount = 5
+
+
         override suspend fun doWork(): Result {
 
             var resultWork: Result
+            var whileLoop = false
+            var errorCount = 0
 
-            try {
+            do{
 
-                if (remoteMode) {
-                    remoteData()
-                } else {
-                    dataDao.insertValue(apiServiceAndDatabase())
-                }
+                try {
+                    delay(delayTime)
 
-                if (serverMode) {
-                    dataDao.insertValue(apiServiceAndDatabase())
-                    FirebaseFactory.setDataToFirebase(apiServiceAndDatabase())
-                } else {
-                    while (true) {
-                        delay(30000)
-                        apiServiceAndDatabase()
+                    when{
+                        remoteMode ->{
+                            val dataSnapshot = getFirebaseData()
+                            if ( dataSnapshot!= null) {
+                                val dataFirebase = dataSnapshot.getValue<List<DataDbModel>>()
+
+                                if(dataFirebase.isNullOrEmpty()){
+                                    Log.d("HCS_RefreshDataWorker","Firebase NO data")
+                                } else{
+                                    dataDao.insertValue(dataFirebase)
+                                    Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
+                                }
+
+                            }else{
+                                Log.d("HCS_RefreshDataWorker","Firebase Empty Snapshot")
+                            }
+
+                            whileLoop = false
+                        }
+
+                        serverMode ->{
+                            val dataFromApiServer = runApiService()
+                            dataDao.insertValue(dataFromApiServer)
+                            myRef.setValue(dataFromApiServer)
+                            Log.d("HCS_RefreshDataWorker","Write to DB from Network")
+                            whileLoop = false
+                        }
+                        !remoteMode && !serverMode ->{
+                                dataDao.insertValue(runApiService())
+                                delay(periodTime*1000-delayTime)
+                            whileLoop = true
+
+                        }
                     }
+
+
+                    errorCount = 0
+                } catch (e: Exception) {
+                    Log.d("HCS_RefreshDataWorker", e.toString())
+                    delay(delayTime)
+                    whileLoop = true
+                    errorCount += 1
+                    //resultWork = Result.success()
                 }
 
-                resultWork = Result.success()
+                if (errorCount>limitErrorCount) {
+                    whileLoop = false
+                    resultWork = Result.failure()
+                }else{
+                    resultWork = Result.success()
+                }
 
-            } catch (e: Exception) {
-                Log.d("HCS_RefreshDataWorker", e.toString())
-                resultWork = Result.retry()
-            }
+                Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount, whileLoop = $whileLoop")
+
+            }while (whileLoop)
+
 
             return resultWork
         }
 
-
-//            try {
-//                do{
-//
-//                    if (serverMode){
-//                        FirebaseFactory.setDataToFirebase(apiServiceAndDatabase())
-//                    }else{
-//                        if (remoteMode){
-//                            Log.d("HCS_RefreshDataWorker", "e.toString()")
-//                        }else {
-//                            apiServiceAndDatabase()
-//                            delay(10000)
-//                        }
-//                    }
-//
-//                    resultWork = Result.success()
-//
-//                }while (!serverMode)
-//
-//
-//
-//            } catch (e: Exception){
-//                Log.d("HCS_RefreshDataWorker", e.toString())
-//                resultWork = Result.retry()
-//            }
+    private suspend fun getFirebaseData():DataSnapshot?{
+        return try{
+            val data = myRef.get().await()
+            data
+        } catch (e : Exception){
+            null
+        }
+    }
 
 
 
 
 
-    private suspend fun apiServiceAndDatabase():List<DataDbModel>{
+    private suspend fun runApiService():List<DataDbModel>{
 
         val jsonContainer = apiService.getData()
         val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
@@ -99,10 +135,6 @@ class RefreshDataWorker(
         }
 
         return dataDbModelList
-    }
-
-    private fun remoteData(){
-        Log.d("HCS_RefreshDataWorker","Firebase write")
     }
 
 

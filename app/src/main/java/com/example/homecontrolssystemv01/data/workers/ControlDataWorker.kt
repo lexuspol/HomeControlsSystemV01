@@ -3,14 +3,9 @@ package com.example.homecontrolssystemv01.data.workers
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.example.homecontrolssystemv01.data.DataList
-import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
-import kotlinx.coroutines.delay
 
-
-import java.util.concurrent.TimeUnit
 
 class ControlDataWorker(
     context: Context,

@@ -27,7 +27,8 @@ class DataMapper {
     fun valueDtoToDbModel(dataDto:DataDto) = DataDbModel(
         id = dataDto.id,
         value = dataDto.value,
-        name = dataDto.name
+        name = dataDto.name,
+        type = dataDto.type
     )
 
 
@@ -58,7 +59,7 @@ class DataMapper {
 
     private fun convertDateServerToDateUI(date:String?):String{
         if (date == null) return ""
-        return "${date.substring(4,14)}  ${date.substring(15,20)}"
+        return "${date.substring(4,14)} ${date.substring(15,20)}"
     }
 
 

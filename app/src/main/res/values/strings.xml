@@ -21,6 +21,7 @@
         <item>24|Свет в детской^  </item>
         <item>27|Свет на улице^  </item>
         <item>25|Свет в кинозале^  </item>
+        <item>32|Давление воды^  бар</item>
     </string-array>
 
 </resources>

@@ -6,10 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
-import android.os.BatteryManager
 import android.util.Log
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
@@ -17,12 +15,9 @@ import androidx.work.*
 import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.ConnectSetting
-import com.example.homecontrolssystemv01.data.DataList
-import com.example.homecontrolssystemv01.data.FirebaseFactory
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
-import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.model.Data
@@ -52,20 +47,26 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
 
     private var _connectSetting = ConnectSetting()
 
+    //
     var _dataConnect:MutableState<DataConnect> = mutableStateOf(DataConnect())
 
+    //запускаем бродкаст, он следит за состоянием сети, если сеть изменилась, то вызывается метод
     private val wifiScanReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
-            val ssidFromWiFi = wifiManager.connectionInfo.ssid
-            if (_dataConnect.value.ssidConnect == ssidFromWiFi){
-                Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
+            val ssidFromWiFi = wifiManager.connectionInfo.ssid  // метод устарел, но другой очень муторный
+            if (_dataConnect.value.ssidConnect == ssidFromWiFi){                                    //!!!!
+                //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
                 startLoad(ssidFromWiFi)
             }
         }
     }
 
+    private val myRef = Firebase.database(FIREBASE_URL).getReference(FIREBASE_PATH)
+
+    //создаем слушателя для Firebase, в бругом месте сложно, так как запись в базу происходит в карутине
+    //запускаем слуателя в loadData
     private val valueEventListener: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
 
@@ -74,7 +75,8 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
             if (dataFirebase != null) {
                 Log.d("HCS_FIREBASE", dataFirebase[0].value.toString())
 
-                //dataDao.insertValue(dataFirebase)
+                startLocal(true)
+
 
             } else {
                 Log.d("HCS_FIREBASE_ERROR", "Data = null")
@@ -100,18 +102,19 @@ override fun getDataList(): LiveData<List<Data>> {
     override fun loadData(connectSetting:ConnectSetting) {
 
         _connectSetting = connectSetting
-
-        Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
-                "Ssid = ${_connectSetting.ssid}")
-
         _dataConnect.value.ssidConnect = ""//обнуляем сеть
+
+        //Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
+        //        "Ssid = ${_connectSetting.ssid}")
 
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
         application.registerReceiver(wifiScanReceiver, intentFilter)
 
     }
 
-    override fun closeConnect() {application.unregisterReceiver(wifiScanReceiver)}
+    override fun closeConnect() {
+        application.unregisterReceiver(wifiScanReceiver)
+    }
 
     override fun getSsidList():MutableList<String>{
         return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
@@ -156,43 +159,41 @@ override fun getDataList(): LiveData<List<Data>> {
         createWorker()
     }
 
-    private fun loadFirebase() {
-        FirebaseFactory.createEventListener(valueEventListener)
-        Log.d("HCS_BroadcastReceiver","lode Firebase")
-    }
+
 
     private fun createWorker(){
+
+        myRef.removeEventListener(valueEventListener)
 
         when (_dataConnect.value.modeConnect) {
             ModeConnect.SERVER -> {
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-                FirebaseFactory.removeEventListener(valueEventListener)
 
                 workManager.enqueueUniquePeriodicWork(
                     RefreshDataWorker.NAME_PERIODIC,
                     ExistingPeriodicWorkPolicy.KEEP,
                     RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode,false)
                 )
-                Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
+                //Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
 
             }
             ModeConnect.LOCAL -> {
 
-                FirebaseFactory.removeEventListener(valueEventListener)
                 startLocal(false)
-                Log.d("HCS_WorkManager","Mode.LOCAL - loadDataOneTime")
+                //Log.d("HCS_WorkManager","Mode.LOCAL - loadDataOneTime")
 
             }
             ModeConnect.REMOTE -> {
-                startLocal(true)
-                Log.d("HCS_WorkManager","Mode.REMOTE - loadDataOneTime")
+                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+                myRef.addValueEventListener(valueEventListener)
+                //Log.d("HCS_WorkManager","Mode.REMOTE - loadDataOneTime")
 
             }
             ModeConnect.STOP -> {
-                FirebaseFactory.removeEventListener(valueEventListener)
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                Log.d("HCS_WorkManager","Mode.STOP")
+                //Log.d("HCS_WorkManager","Mode.STOP")
             }
         }
 
@@ -209,7 +210,11 @@ override fun getDataList(): LiveData<List<Data>> {
 
     }
 
-
+    companion object{
+        const val FIREBASE_URL =
+            "https://homesystemcontrolv01-default-rtdb.asia-southeast1.firebasedatabase.app"
+        const val FIREBASE_PATH = "data"
+    }
 
 
 }
