@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.data
+package com.example.homecontrolssystemv01.domain.model
 
 data class ConnectSetting(
 

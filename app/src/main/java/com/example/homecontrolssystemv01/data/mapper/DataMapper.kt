@@ -3,9 +3,11 @@ package com.example.homecontrolssystemv01.data.mapper
 
 
 import com.example.homecontrolssystemv01.data.database.DataDbModel
+import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
 import com.example.homecontrolssystemv01.domain.model.Data
+import com.example.homecontrolssystemv01.domain.model.DataSetting
 import com.google.gson.Gson
 
 
@@ -31,10 +33,24 @@ class DataMapper {
         type = dataDto.type
     )
 
+    fun settingDbModelToEntity(dataSetting:DataSettingDbModel) = DataSetting(
+        id = dataSetting.id,
+        visible= dataSetting.visible,
+        limitMode = dataSetting.limitMode,
+        limitMax= dataSetting.limitMax,
+        limitMin= dataSetting.limitMin,
+        setCounter = dataSetting.setCounter
 
-        fun mapDataToEntity(dataDb: DataDbModel,listDescription:Array<String>):Data {
-            var description:String = ""
-            var unit:String = ""
+    )
+
+
+        fun mapDataToEntity(dataDb: DataDbModel,
+                            listDescription:Array<String>
+         //                   setting:List<DataSettingDbModel>
+        ):Data {
+            var description= ""
+            var unit= ""
+
 
             listDescription.forEach { item ->
                 if (item.substringBefore('|')==dataDb.id.toString()) {
@@ -49,7 +65,10 @@ class DataMapper {
                 name = dataDb.name,
                 type = dataDb.type,
                 description = description,
-                unit = unit)
+                unit = unit
+
+            )
+
         }
 
 
@@ -59,7 +78,7 @@ class DataMapper {
 
     private fun convertDateServerToDateUI(date:String?):String{
         if (date == null) return ""
-        return "${date.substring(4,14)} ${date.substring(15,20)}"
+        return "${date.substring(4,14)} ${date.substring(15,23)}"
     }
 
 

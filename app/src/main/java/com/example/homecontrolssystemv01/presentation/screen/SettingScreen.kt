@@ -8,7 +8,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -20,19 +19,18 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.domain.model.Data
-import com.example.homecontrolssystemv01.domain.model.DataConnect
-import com.example.homecontrolssystemv01.presentation.MainViewModel
+import com.example.homecontrolssystemv01.domain.model.ConnectInfo
 import com.example.homecontrolssystemv01.presentation.RadioButtonList
-import com.example.homecontrolssystemv01.presentation.enums.DataSetting
+import com.example.homecontrolssystemv01.domain.model.ConnectSetting
 import com.example.homecontrolssystemv01.ui.theme.Purple200
 
 @Composable
 fun SettingScreen(
     listSsid:RadioButtonList,
-    dataSetting:DataSetting,
+    connectSetting: ConnectSetting,
     listData:List<Data>?,
-    dataConnect:MutableState<DataConnect>,
-    onValueChange: (DataSetting) -> Unit,
+    connectInfo:MutableState<ConnectInfo>,
+    onValueChange: (ConnectSetting) -> Unit,
     pressOnBack: () -> Unit = {}
 
 ){
@@ -49,18 +47,18 @@ fun SettingScreen(
                 .padding(10.dp)
         ) {
             Row() {
-                Text(text = "SSID WIFI ${dataConnect.value.ssidConnect}  ")
-                Text(text = "Mode ${dataConnect.value.modeConnect.name}")
+                Text(text = "SSID WIFI ${connectInfo.value.ssidConnect}  ")
+                Text(text = "Mode ${connectInfo.value.modeConnect.name}")
             }
             //Text(text = "Дата и время ${listData[0].value}")
             Spacer(modifier = Modifier.size(20.dp))
-            MySwitch(dataSetting,onValueChange)
+            MySwitch(connectSetting,onValueChange)
             Spacer(modifier = Modifier.size(20.dp))
             Text(text = "Домашняя SSID WIFI сеть",
                 style = MaterialTheme.typography.h6,
  //               modifier = Modifier.padding(16.dp)
                                )
-            MyRadioButton(listSsid,dataSetting,onValueChange)
+            MyRadioButton(listSsid,connectSetting,onValueChange)
             //MyListData(listData)
 
         }
@@ -98,11 +96,11 @@ fun MyListData(listData:List<Data>) {
 }
 
 @Composable
-fun MySwitch(dataSetting: DataSetting,
-             onValueChange: (DataSetting) -> Unit)
+fun MySwitch(connectSetting: ConnectSetting,
+             onValueChange: (ConnectSetting) -> Unit)
 {
     val checkedState = remember { mutableStateOf(true) }
-    checkedState.value = dataSetting.serverMode
+    checkedState.value = connectSetting.serverMode
 
     Row(
         Modifier
@@ -115,8 +113,8 @@ fun MySwitch(dataSetting: DataSetting,
             checked = checkedState.value ,
             onCheckedChange = {
                 checkedState.value = it
-                dataSetting.serverMode=it
-                onValueChange(dataSetting)
+                connectSetting.serverMode=it
+                onValueChange(connectSetting)
             }
 
         )
@@ -131,8 +129,8 @@ fun MySwitch(dataSetting: DataSetting,
 
 @Composable
 fun MyRadioButton (radioButtonList: RadioButtonList,
-                   dataSetting: DataSetting,
-                   onValueChange: (DataSetting) -> Unit){
+                   connectSetting: ConnectSetting,
+                   onValueChange: (ConnectSetting) -> Unit){
 
     val (selectedOption, onOptionSelected) = remember {
         mutableStateOf(radioButtonList.list[radioButtonList.index])
@@ -149,8 +147,8 @@ fun MyRadioButton (radioButtonList: RadioButtonList,
                         selected = (text == selectedOption),
                         onClick = {
                             onOptionSelected(text)
-                            dataSetting.ssid = text
-                            onValueChange(dataSetting)
+                            connectSetting.ssid = text
+                            onValueChange(connectSetting)
                         },
                         role = Role.RadioButton
                     )

@@ -1,27 +1,54 @@
 <resources>
     <string name="app_name">Home Control System</string>
-    <string name="menu_home">HOME</string>
-    <string name="menu_list">LIST</string>
+    <string name="menu_home">DATA</string>
+    <string name="menu_message">MESSAGE</string>
     <string name="menu_control">CONTROL</string>
     <string name="setting">Setting</string>
     <string-array name="data">
         <item>1|Наружная температура^ C</item>
         <item>2|Входная дверь^  </item>
         <item>3|Дверь на террасу^  </item>
+        <item>4|Ворота в гараж^  </item>
+        <item>5|Дверь в гараж^  </item>
         <item>6|Температура пола^ C</item>
         <item>7|Подача на теплый пол^ C</item>
         <item>8|Обратка на теплый пол^ C</item>
         <item>9|Подача на радиаторы^ C</item>
         <item>10|Обратка на радиаторы^ C</item>
-        <item>11|Термператора Termix^ C</item>
+        <item>11|Температора Termix^ C</item>
         <item>12|Температура бойлера^ C</item>
-        <item>13|Температура в спальной^ C</item>
-        <item>14|Влажность в спальной^ %</item>
+        <item>13|Температура в гостинной^ C</item>
+        <item>14|Влажность в гостинной^ %</item>
+        <item>15|Температура в спальной^ C</item>
+        <item>16|Влажность в спальной^ %</item>
+        <item>17|Температура в детской^ C</item>
+        <item>18|Влажность в детской^ %</item>
+        <item>19|Температура в кинозале^ C</item>
+        <item>20|Влажность в кинозале^ %</item>
+        <item>21|Время работы котла^ </item>
+
         <item>23|Свет в спальной^  </item>
         <item>24|Свет в детской^  </item>
-        <item>27|Свет на улице^  </item>
         <item>25|Свет в кинозале^  </item>
+
+        <item>27|Свет на улице^  </item>
+        <item>28|Утечка воды на первом этаже^  </item>
+        <item>29|Утечка воды на втором этаже^  </item>
+        <item>30|Въездные ворота^  </item>
+        <item>31|Основной электрический ввод ^  </item>
         <item>32|Давление воды^  бар</item>
+        <item>33|Утечка газа в котельной^ </item>
+        <item>34|Угарный газ в котельной^ </item>
+        <item>35|Утечка газа на кухне^  </item>
+        <item>36|Счетчик воды^  л</item>
+        <item>37|Счетчик энергии^  Вт</item>
+        <item>38|Энергия за месяц^  Вт</item>
+        <item>39|Энергия за прошлый месяц^  кВт</item>
+        <item>40|Расход энергии^  Вт/ч</item>
+        <item>40|Расход энергии^  Вт/ч</item>
+
+
+
     </string-array>
 
 </resources>

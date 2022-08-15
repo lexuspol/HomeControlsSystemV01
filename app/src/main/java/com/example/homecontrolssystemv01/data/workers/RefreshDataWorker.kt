@@ -7,7 +7,7 @@ import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
-import com.example.homecontrolssystemv01.data.repository.DataRepositoryImpl
+import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
@@ -27,8 +27,8 @@ class RefreshDataWorker(
 
     private val dataDao = AppDatabase.getInstance(context).dataDao()
 
-    private val myRef = Firebase.database(DataRepositoryImpl.FIREBASE_URL).getReference(
-        DataRepositoryImpl.FIREBASE_PATH
+    private val myRef = Firebase.database(MainRepositoryImpl.FIREBASE_URL).getReference(
+        MainRepositoryImpl.FIREBASE_PATH
     )
 
     private val mapper = DataMapper()
@@ -36,21 +36,21 @@ class RefreshDataWorker(
     private val serverMode = workerParameters.inputData.getBoolean(NAME_SERVER_MODE,false)
     private val remoteMode = workerParameters.inputData.getBoolean(NAME_REMOTE_MODE,false)
 
-    private val delayTime:Long = 500//milliSeconds
-    private val periodTime:Long = 10//seconds
-    private val limitErrorCount = 5
+    private val delayTime:Long = 1000//milliSeconds
+    private val periodTime:Long = 20//seconds
+    private val limitErrorCount = 10//кол неудачных попыток, после чего результат - ошибка
 
 
         override suspend fun doWork(): Result {
 
             var resultWork: Result
-            var whileLoop = false
+            var whileLoop = false//цикл делаем если LOCAL или при ошибке
             var errorCount = 0
 
             do{
 
                 try {
-                    delay(delayTime)
+                    //delay(delayTime)//немного ждем, так как бывает вылетает ошибка
 
                     when{
                         remoteMode ->{
@@ -60,29 +60,37 @@ class RefreshDataWorker(
 
                                 if(dataFirebase.isNullOrEmpty()){
                                     Log.d("HCS_RefreshDataWorker","Firebase NO data")
+                                    errorCount += 1
+                                    whileLoop = true
                                 } else{
                                     dataDao.insertValue(dataFirebase)
                                     Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
+                                    whileLoop = false
                                 }
 
                             }else{
                                 Log.d("HCS_RefreshDataWorker","Firebase Empty Snapshot")
+                                errorCount += 1
+                                whileLoop = true
                             }
 
-                            whileLoop = false
+
                         }
 
                         serverMode ->{
                             val dataFromApiServer = runApiService()
                             dataDao.insertValue(dataFromApiServer)
                             myRef.setValue(dataFromApiServer)
-                            Log.d("HCS_RefreshDataWorker","Write to DB from Network")
+                            Log.d("HCS_RefreshDataWorker","Write to DB/Firebase from Network")
                             whileLoop = false
                         }
                         !remoteMode && !serverMode ->{
                                 dataDao.insertValue(runApiService())
-                                delay(periodTime*1000-delayTime)
-                            whileLoop = true
+
+                            //можно включить переодический опрос
+                             //delay(periodTime*1000-delayTime)
+                            //whileLoop = true
+                            whileLoop = false
 
                         }
                     }
@@ -99,12 +107,13 @@ class RefreshDataWorker(
 
                 if (errorCount>limitErrorCount) {
                     whileLoop = false
+                    Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount")
                     resultWork = Result.failure()
                 }else{
                     resultWork = Result.success()
                 }
 
-                Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount, whileLoop = $whileLoop")
+
 
             }while (whileLoop)
 
@@ -117,6 +126,7 @@ class RefreshDataWorker(
             val data = myRef.get().await()
             data
         } catch (e : Exception){
+            Log.d("HCS_RefreshDataWorker", "getFirebaseData error = $e")
             null
         }
     }

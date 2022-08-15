@@ -11,9 +11,10 @@ import com.example.homecontrolssystemv01.presentation.MainViewModel
 fun MainScreen(viewModel:MainViewModel) {
 
     val dataList = viewModel.getDataListUI().observeAsState().value
-    val dataConnect = viewModel.getDataConnectUI()
+
+    val dataConnect = viewModel.getConnectInfoUI()
     val listSsid = viewModel.getSsidListForRadioButton()
-    val dataSetting = viewModel.getDataSettingUI()
+    val dataSetting = viewModel.getConnectSettingUI()
 
     val navController = rememberNavController()
 

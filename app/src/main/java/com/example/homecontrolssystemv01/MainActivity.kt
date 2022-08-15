@@ -10,13 +10,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.presentation.screen.MainScreen
 import com.example.homecontrolssystemv01.ui.theme.HomeControlsSystemV01Theme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel by viewModels<MainViewModel>()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
+
+
+
+
+
+
+
 
         setContent {
             HomeControlsSystemV01Theme {

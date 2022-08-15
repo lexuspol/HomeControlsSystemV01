@@ -14,16 +14,16 @@ import androidx.lifecycle.Transformations
 import androidx.work.*
 import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.R
-import com.example.homecontrolssystemv01.data.ConnectSetting
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
+import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
-import com.example.homecontrolssystemv01.domain.model.Data
+import com.example.homecontrolssystemv01.data.workers.SettingDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
-import com.example.homecontrolssystemv01.domain.model.DataConnect
-import com.example.homecontrolssystemv01.domain.model.ModeConnect
+import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.Data
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
@@ -32,13 +32,14 @@ import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 
 
-class DataRepositoryImpl (private val application: Application): DataRepository {
+class MainRepositoryImpl (private val application: Application): DataRepository {
 
     private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
     private val workManager = WorkManager.getInstance(application)
 
     private val dataDao = AppDatabase.getInstance(application).dataDao()
+   // private val dataSettingDao = AppDatabase.getInstance(application).dataSetting()
 
     private  val mapper = DataMapper()
     private val intentFilter = IntentFilter()
@@ -48,14 +49,14 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
     private var _connectSetting = ConnectSetting()
 
     //
-    var _dataConnect:MutableState<DataConnect> = mutableStateOf(DataConnect())
+    var _connectInfo:MutableState<ConnectInfo> = mutableStateOf(ConnectInfo())
 
     //запускаем бродкаст, он следит за состоянием сети, если сеть изменилась, то вызывается метод
     private val wifiScanReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
             val ssidFromWiFi = wifiManager.connectionInfo.ssid  // метод устарел, но другой очень муторный
-            if (_dataConnect.value.ssidConnect == ssidFromWiFi){                                    //!!!!
+            if (_connectInfo.value.ssidConnect == ssidFromWiFi){                                    //!!!!
                 //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
                 startLoad(ssidFromWiFi)
@@ -65,7 +66,7 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
 
     private val myRef = Firebase.database(FIREBASE_URL).getReference(FIREBASE_PATH)
 
-    //создаем слушателя для Firebase, в бругом месте сложно, так как запись в базу происходит в карутине
+    //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
     //запускаем слуателя в loadData
     private val valueEventListener: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -90,19 +91,27 @@ class DataRepositoryImpl (private val application: Application): DataRepository 
     }
 
 override fun getDataList(): LiveData<List<Data>> {
-    return Transformations.map(dataDao.getValueList()){
-        it.map{
-            mapper.mapDataToEntity(it,listDescription)
+
+    return Transformations.map(dataDao.getValueList()) { list ->
+        list.map {
+            mapper.mapDataToEntity(it, listDescription)
         }
     }
 }
+    override fun getDataSetting(): LiveData<List<DataSetting>> {
+        return Transformations.map(dataDao.getSettingList()) { list ->
+            list.map {
+                mapper.settingDbModelToEntity(it)
+            }
+        }
+    }
 
-    override fun getDataConnect(): MutableState<DataConnect> = _dataConnect
+    override fun getDataConnect(): MutableState<ConnectInfo> = _connectInfo
 
-    override fun loadData(connectSetting:ConnectSetting) {
+    override fun loadData(connectSetting: ConnectSetting) {
 
         _connectSetting = connectSetting
-        _dataConnect.value.ssidConnect = ""//обнуляем сеть
+        _connectInfo.value.ssidConnect = ""//обнуляем сеть
 
         //Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
         //        "Ssid = ${_connectSetting.ssid}")
@@ -120,25 +129,47 @@ override fun getDataList(): LiveData<List<Data>> {
         return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
     }
 
-    override fun putControl(controlMode:Int) {
-        workManager.enqueueUniqueWork(
-            ControlDataWorker.NAME_WORKER_CONTROL,
-            ExistingWorkPolicy.REPLACE,
-            ControlDataWorker.makeRequestOneTime(controlMode))
+    override fun putControl(controlInfo: ControlInfo) {
+        //dataDao.getSettingList()
+
+        if (_connectInfo.value.modeConnect == ModeConnect.LOCAL){
+            workManager.enqueueUniqueWork(
+                ControlDataWorker.NAME_WORKER_CONTROL,
+                ExistingWorkPolicy.REPLACE,
+                ControlDataWorker.makeRequestOneTime(controlInfo))
+        }else{
+            Log.d("HCS_MainRepositoryImpl","CONTROL - NOT, MODE - ${_connectInfo.value.modeConnect}")
+        }
+
     }
+
+    override fun putDataSetting(dataSetting:DataSetting) {
+
+
+        workManager.enqueueUniqueWork(
+            SettingDataWorker.NAME_WORKER_SETTING,
+            ExistingWorkPolicy.REPLACE,
+            SettingDataWorker.makeRequestOneTime(dataSetting)
+        )
+
+
+
+    }
+
+
 
     private fun startLoad(ssidFromWiFi:String){
 
         val ssidFromParameters = "\"${_connectSetting.ssid}\""
 
-        val dataConnect = DataConnect(ssidFromWiFi)
+        val connectInfo = ConnectInfo(ssidFromWiFi)
 
          when{
                 (ssidFromWiFi == ssidFromParameters)&&_connectSetting.serverMode -> {
-                    dataConnect.modeConnect = ModeConnect.SERVER
+                    connectInfo.modeConnect = ModeConnect.SERVER
                 }
                 (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
-                    dataConnect.modeConnect = ModeConnect.LOCAL
+                    connectInfo.modeConnect = ModeConnect.LOCAL
 //                    val status = workManager.getWorkInfosByTag(RefreshDataWorker.NAME_PERIODIC).get()
 //                    if (status.isEmpty()) {
 //                        Log.d("HCS_BroadcastReceiver","state work = pusto")
@@ -148,14 +179,14 @@ override fun getDataList(): LiveData<List<Data>> {
 //                    }
                 }
                 (ssidFromWiFi != ssidFromParameters)&&!_connectSetting.serverMode -> {
-                    dataConnect.modeConnect = ModeConnect.REMOTE
+                    connectInfo.modeConnect = ModeConnect.REMOTE
                 }
-                else -> dataConnect.modeConnect = ModeConnect.STOP
+                else -> connectInfo.modeConnect = ModeConnect.STOP
             }
 
-        Log.d("HCS_BroadcastReceiver", "ssid = ${dataConnect.ssidConnect}, mode - ${dataConnect.modeConnect.name}")
+        Log.d("HCS_BroadcastReceiver", "ssid = ${connectInfo.ssidConnect}, mode - ${connectInfo.modeConnect.name}")
 
-        _dataConnect.value = dataConnect
+        _connectInfo.value = connectInfo
         createWorker()
     }
 
@@ -165,7 +196,7 @@ override fun getDataList(): LiveData<List<Data>> {
 
         myRef.removeEventListener(valueEventListener)
 
-        when (_dataConnect.value.modeConnect) {
+        when (_connectInfo.value.modeConnect) {
             ModeConnect.SERVER -> {
                 workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
 
@@ -209,6 +240,8 @@ override fun getDataList(): LiveData<List<Data>> {
             )
 
     }
+
+
 
     companion object{
         const val FIREBASE_URL =

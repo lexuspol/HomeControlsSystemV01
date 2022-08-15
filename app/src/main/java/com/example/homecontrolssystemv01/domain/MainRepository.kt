@@ -2,16 +2,14 @@ package com.example.homecontrolssystemv01.domain
 
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.LiveData
-import com.example.homecontrolssystemv01.data.ConnectSetting
-import com.example.homecontrolssystemv01.domain.model.Data
-import com.example.homecontrolssystemv01.domain.model.DataConnect
+import com.example.homecontrolssystemv01.domain.model.*
 
 
 interface DataRepository {
 
    fun getDataList (): LiveData<List<Data>>
 
-   fun getDataConnect(): MutableState<DataConnect>
+   fun getDataConnect(): MutableState<ConnectInfo>
 
    fun loadData(connectSetting: ConnectSetting)
 
@@ -19,7 +17,10 @@ interface DataRepository {
 
    fun getSsidList():MutableList<String>
 
-   fun putControl(controlMode:Int)
+   fun putControl(controlInfo: ControlInfo)
+
+   fun putDataSetting(dataSetting:DataSetting)
+   fun getDataSetting():LiveData<List<DataSetting>>
 
 
 }

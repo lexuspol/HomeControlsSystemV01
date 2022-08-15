@@ -2,7 +2,7 @@ package com.example.homecontrolssystemv01.domain.useCase
 
 import com.example.homecontrolssystemv01.domain.DataRepository
 
-class GetDataConnectUseCase (
+class GetConnectInfoUseCase (
     private val repository: DataRepository
 ) {
     operator fun invoke() = repository.getDataConnect()
