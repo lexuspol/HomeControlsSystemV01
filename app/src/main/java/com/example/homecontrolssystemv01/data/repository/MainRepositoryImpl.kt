@@ -59,6 +59,7 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
             if (_connectInfo.value.ssidConnect == ssidFromWiFi){                                    //!!!!
                 //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
+
                 startLoad(ssidFromWiFi)
             }
         }
@@ -98,6 +99,25 @@ override fun getDataList(): LiveData<List<Data>> {
         }
     }
 }
+
+    override fun getMessageList(): LiveData<List<Message>> {
+
+        return Transformations.map(dataDao.getMessageList()) { list ->
+            list.map {
+                mapper.mapMessageToEntity(it)
+            }
+        }
+    }
+
+    override suspend fun deleteMessage(time: Long) {
+        if (time==0L){
+            dataDao.deleteAllMessage()
+        }else{
+            dataDao.deleteMessage(time)
+        }
+
+    }
+
     override fun getDataSetting(): LiveData<List<DataSetting>> {
         return Transformations.map(dataDao.getSettingList()) { list ->
             list.map {
@@ -109,6 +129,8 @@ override fun getDataList(): LiveData<List<Data>> {
     override fun getDataConnect(): MutableState<ConnectInfo> = _connectInfo
 
     override fun loadData(connectSetting: ConnectSetting) {
+
+        //dataDao.deleteMessage()
 
         _connectSetting = connectSetting
         _connectInfo.value.ssidConnect = ""//обнуляем сеть

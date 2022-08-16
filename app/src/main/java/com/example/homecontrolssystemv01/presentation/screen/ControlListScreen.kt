@@ -14,12 +14,12 @@ import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
 
 @Composable
-fun ControlDataScreen(
+fun ControlListScreen(
     listDataContainer:MutableList<DataContainer>,
     loadingIsComplete:Boolean,
     onControl: (ControlInfo) -> Unit){
 
-    if (loadingIsComplete){
+  //  if (loadingIsComplete){
 
         val lightSleepOn = giveDataById(listDataContainer,23)
         val lightChildOn = giveDataById(listDataContainer,24)
@@ -28,10 +28,10 @@ fun ControlDataScreen(
             ButtonLight(lightSleepOn, id = 23, onControl)
             ButtonLight(lightChildOn, id = 24, onControl)
         }
-
-    } else {
-        CustomLinearProgressBar()
-    }
+//
+//    } else {
+//        CustomLinearProgressBar()
+//    }
 
 }
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.viewModelScope
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
 import com.example.homecontrolssystemv01.domain.BatteryMonitor
 import com.example.homecontrolssystemv01.domain.model.*
@@ -16,6 +17,7 @@ import com.example.homecontrolssystemv01.domain.useCase.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
 
 
 class MainViewModel(application: Application): AndroidViewModel(application) {
@@ -26,7 +28,12 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private val repository = MainRepositoryImpl(aplic)
     private val loadData = LoadDataUseCase(repository)
+
     private val getDataList = GetDataListUseCase(repository)
+    private val getMessageList = GetMessageListUseCase(repository)
+
+    private val deleteMessage = DeleteMessageUseCase(repository)
+
     private val closeConnect = CloseConnectUseCase(repository)
     private val getSsidList = GetListSsidUseCase(repository)
     private val getConnectInfo = GetConnectInfoUseCase(repository)
@@ -60,6 +67,15 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
 
     fun getDataListUI(): LiveData<List<Data>> = getDataList()
+    fun getMessageListUI(): LiveData<List<Message>> = getMessageList()
+
+    fun deleteMessageUI(time:Long){
+
+        viewModelScope.launch {
+            deleteMessage(time)
+        }
+
+    }
 
     fun getConnectSettingUI(): ConnectSetting = _connectSetting
 

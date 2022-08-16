@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.work.*
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
+import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
@@ -14,6 +15,7 @@ import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.tasks.await
+import java.util.*
 
 
 import java.util.concurrent.TimeUnit
@@ -38,7 +40,7 @@ class RefreshDataWorker(
 
     private val delayTime:Long = 1000//milliSeconds
     private val periodTime:Long = 20//seconds
-    private val limitErrorCount = 10//кол неудачных попыток, после чего результат - ошибка
+    private val limitErrorCount = 5//кол неудачных попыток, после чего результат - ошибка
 
 
         override suspend fun doWork(): Result {
@@ -60,16 +62,19 @@ class RefreshDataWorker(
 
                                 if(dataFirebase.isNullOrEmpty()){
                                     Log.d("HCS_RefreshDataWorker","Firebase NO data")
+                                    dataDao.insertMessage(MessageDbModel(Date().time,1,"Firebase NO data"))
                                     errorCount += 1
                                     whileLoop = true
                                 } else{
                                     dataDao.insertValue(dataFirebase)
                                     Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
+                                    dataDao.insertMessage(MessageDbModel(Date().time,0,"Зарузка из Firebase"))
                                     whileLoop = false
                                 }
 
                             }else{
                                 Log.d("HCS_RefreshDataWorker","Firebase Empty Snapshot")
+                                dataDao.insertMessage(MessageDbModel(Date().time,1,"Firebase empty"))
                                 errorCount += 1
                                 whileLoop = true
                             }
@@ -82,10 +87,12 @@ class RefreshDataWorker(
                             dataDao.insertValue(dataFromApiServer)
                             myRef.setValue(dataFromApiServer)
                             Log.d("HCS_RefreshDataWorker","Write to DB/Firebase from Network")
+                            dataDao.insertMessage(MessageDbModel(Date().time,1,"Сервер.Обновление данных"))
                             whileLoop = false
                         }
                         !remoteMode && !serverMode ->{
                                 dataDao.insertValue(runApiService())
+
 
                             //можно включить переодический опрос
                              //delay(periodTime*1000-delayTime)
@@ -108,6 +115,7 @@ class RefreshDataWorker(
                 if (errorCount>limitErrorCount) {
                     whileLoop = false
                     Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount")
+                    dataDao.insertMessage(MessageDbModel(Date().time,2,"Ошибка загрузки данных"))
                     resultWork = Result.failure()
                 }else{
                     resultWork = Result.success()
@@ -127,6 +135,7 @@ class RefreshDataWorker(
             data
         } catch (e : Exception){
             Log.d("HCS_RefreshDataWorker", "getFirebaseData error = $e")
+            dataDao.insertMessage(MessageDbModel(Date().time,2,"Error Firebase"))
             null
         }
     }
@@ -140,6 +149,7 @@ class RefreshDataWorker(
         val jsonContainer = apiService.getData()
         val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
         Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+        dataDao.insertMessage(MessageDbModel(Date().time,0,"Загрузка данных"))
         val dataDbModelList = dataDtoList.map {
             mapper.valueDtoToDbModel(it)
         }

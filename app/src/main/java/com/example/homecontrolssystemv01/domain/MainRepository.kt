@@ -22,5 +22,9 @@ interface DataRepository {
    fun putDataSetting(dataSetting:DataSetting)
    fun getDataSetting():LiveData<List<DataSetting>>
 
+   fun getMessageList():LiveData<List<Message>>
+
+   suspend fun deleteMessage(time:Long)
+
 
 }

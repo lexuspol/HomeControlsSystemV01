@@ -27,7 +27,7 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @Composable
-fun ListData(
+fun DataListScreen(
     listDataContainer:MutableList<DataContainer>,
     loadingIsComplete:Boolean,
     connectInfo:MutableState<ConnectInfo>,
@@ -75,11 +75,11 @@ fun ListData(
                 refreshing = true
             }
         ) {
-            LazyColumnCreate(listDataContainer, onSettingChange, onControl,color)
+            LazyColumnCreate(listDataContainer, connectInfo,onSettingChange, onControl)
 
         }
     }else{
-        LazyColumnCreate(listDataContainer, onSettingChange, onControl,color)
+        LazyColumnCreate(listDataContainer, connectInfo,onSettingChange, onControl)
     }
 
 //    if (loadingIsComplete){
@@ -94,38 +94,19 @@ fun ListData(
 @Composable
 fun LazyColumnCreate(
     listDataContainer:MutableList<DataContainer>,
+    connectInfo:MutableState<ConnectInfo>,
     onSettingChange: (DataSetting) -> Unit,
-    onControl: (ControlInfo) -> Unit,
-    color: Color
+    onControl: (ControlInfo) -> Unit
 )
 
 {
     var allList by remember { mutableStateOf(false)}
 
-    Column(modifier = Modifier.padding(5.dp),
-        //horizontalAlignment = Alignment.CenterHorizontally
+    Column(modifier = Modifier
+        .padding(5.dp)
+        .fillMaxHeight(),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-
-
-        ) {
-            Text(text = "${giveDataById(listDataContainer,-1,).data.value}",
-               // Modifier.padding(start = 5.dp),
-                style = MaterialTheme.typography.subtitle1,
-               // alignment = Alignment.Start,
-            color = color)
-            Button(onClick = { allList = !allList },
-               // Modifier.padding(end = 5.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
-                Text(text = "All list",style = MaterialTheme.typography.subtitle1)
-            }
-        }
-        Spacer(modifier = Modifier.size(20.dp))
         LazyColumn {
             items(listDataContainer){ container ->
 
@@ -137,7 +118,32 @@ fun LazyColumnCreate(
 
 
             }
+        }//lazyColumn
+
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+
+
+        ) {
+            Text(text = "${giveDataById(listDataContainer,-1,).data.value}",
+               // Modifier.padding(start = 5.dp),
+                style = MaterialTheme.typography.subtitle1)
+            Text(text = connectInfo.value.modeConnect.name,
+                // Modifier.padding(start = 5.dp),
+                style = MaterialTheme.typography.subtitle1)
+            Button(onClick = { allList = !allList },
+               // Modifier.padding(end = 5.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
+                Text(text = "All list",style = MaterialTheme.typography.subtitle1)
+            }
         }
+        //Spacer(modifier = Modifier.size(20.dp))
+
 
     }
 

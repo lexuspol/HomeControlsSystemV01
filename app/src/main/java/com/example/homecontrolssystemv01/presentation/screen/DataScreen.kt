@@ -18,7 +18,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createDataContainer
 import com.example.homecontrolssystemv01.util.loadingIsComplete
@@ -37,13 +36,15 @@ fun DataScreen(viewModel: MainViewModel,
 
     val dataContainerList = createDataContainer(dataList,settingList)
 
+    val messageList = viewModel.getMessageListUI().observeAsState().value
+
     val connectInfo = viewModel.getConnectInfoUI()
 
     val loadingIsComplete = loadingIsComplete(dataList, connectInfo.value,-1)
 
     //val isLoading: Boolean by viewModel.isLoading
-    val selectedTab = DataHomeTab.getTabFromResource(viewModel.selectedTab.value)
-    val tabs = DataHomeTab.values()
+    val selectedTab = DataScreenTab.getTabFromResource(viewModel.selectedTab.value)
+    val tabs = DataScreenTab.values()
 
 
 
@@ -79,12 +80,7 @@ fun DataScreen(viewModel: MainViewModel,
             val modifier = Modifier.padding(innerPadding)
             Crossfade(selectedTab) { destination ->
                 when (destination) {
-                    DataHomeTab.HOME -> HomeScreen(
-                        dataContainerList,
-                        loadingIsComplete,
-                    )
-
-                    DataHomeTab.LIST -> ListData(
+                    DataScreenTab.DATA -> DataListScreen(
                         dataContainerList,
                         loadingIsComplete,
                         connectInfo,
@@ -93,7 +89,14 @@ fun DataScreen(viewModel: MainViewModel,
                         onLoadData = {viewModel.loadDataUI()}
                     )
 
-                    DataHomeTab.CONTROL -> ControlDataScreen(
+                    DataScreenTab.MESSAGE -> MessageScreen(
+                        dataContainerList,
+                        messageList,
+                        loadingIsComplete,
+                        deleteMessage = {viewModel.deleteMessageUI(it)}
+                    )
+
+                    DataScreenTab.CONTROL -> ControlListScreen(
                         dataContainerList,
                         loadingIsComplete,
                         onControl = {viewModel.putControlUI(it)}
@@ -139,20 +142,20 @@ private fun DataAppBar(selectSetting: () -> Unit = {}) {
 
 }
 
-enum class DataHomeTab(
+enum class DataScreenTab(
     @StringRes val title: Int,
     val icon: ImageVector
 ) {
-    HOME(R.string.menu_home, Icons.Filled.List),
-    LIST(R.string.menu_message, Icons.Filled.Notifications),
+    DATA(R.string.menu_home, Icons.Filled.List),
+    MESSAGE(R.string.menu_message, Icons.Filled.Notifications),
     CONTROL(R.string.menu_control, Icons.Filled.Done);
 
     companion object {
-        fun getTabFromResource(@StringRes resource: Int): DataHomeTab {
+        fun getTabFromResource(@StringRes resource: Int): DataScreenTab {
             return when (resource) {
-                R.string.menu_message -> LIST
+                R.string.menu_message -> MESSAGE
                 R.string.menu_control -> CONTROL
-                else -> HOME
+                else -> DATA
             }
         }
     }
