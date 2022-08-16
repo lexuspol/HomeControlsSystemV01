@@ -3,6 +3,7 @@ package com.example.homecontrolssystemv01.domain.model
 data class DataSetting(
 
     val id:Int=0,
+    val description:String = "",
     val visible:Boolean = false,
     val limitMode:Boolean = false,
     val limitMax:Float = 0F,

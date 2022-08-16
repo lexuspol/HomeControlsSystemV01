@@ -76,6 +76,12 @@ dependencies {
 
     implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
 
+//    implementation("androidx.wear.compose:compose-foundation:1.1.0-alpha03")
+//
+//    // For Wear Material Design UX guidelines and specifications
+//    implementation("androidx.wear.compose:compose-material:1.1.0-alpha03")
+
+
     implementation "com.google.accompanist:accompanist-swiperefresh:0.25.1"
 
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'

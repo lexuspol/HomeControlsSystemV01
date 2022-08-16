@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "network_data_list")//имя таблицы
 data class DataDbModel(
-    @PrimaryKey (autoGenerate = true)
+    @PrimaryKey
     val id:Int=0,
     val value:String?="",
     val name:String?="",

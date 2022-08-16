@@ -37,6 +37,7 @@ class DataMapper {
 
     fun settingDbModelToEntity(dataSetting:DataSettingDbModel) = DataSetting(
         id = dataSetting.id,
+        description = dataSetting.description,
         visible= dataSetting.visible,
         limitMode = dataSetting.limitMode,
         limitMax= dataSetting.limitMax,
@@ -86,6 +87,17 @@ class DataMapper {
     fun mapMessageToEntity(message: MessageDbModel):Message {
         return  Message(
             time = message.time,
+            id = message.id,
+            type = message.type,
+            description = message.description,
+            visible = message.visible
+        )
+    }
+
+    fun mapEntityToMessage(message: Message):MessageDbModel {
+        return  MessageDbModel(
+            time = message.time,
+            id = message.id,
             type = message.type,
             description = message.description,
             visible = message.visible

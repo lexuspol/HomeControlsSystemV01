@@ -109,6 +109,10 @@ override fun getDataList(): LiveData<List<Data>> {
         }
     }
 
+    override suspend fun putMessageList(listMessage: List<Message>) {
+        dataDao.insertMessageList(listMessage.map { mapper.mapEntityToMessage(it) })
+    }
+
     override suspend fun deleteMessage(time: Long) {
         if (time==0L){
             dataDao.deleteAllMessage()

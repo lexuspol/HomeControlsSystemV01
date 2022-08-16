@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.padding
@@ -7,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -18,25 +20,34 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.homecontrolssystemv01.domain.model.Message
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createDataContainer
+import com.example.homecontrolssystemv01.util.createMessageListLimit
 import com.example.homecontrolssystemv01.util.loadingIsComplete
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 
 @Composable
 fun DataScreen(viewModel: MainViewModel,
                selectSetting: () -> Unit){
 
-    val dataList = viewModel.getDataListUI()
-        .observeAsState()//если так не делать, то данные на экране не обновляются
-        .value
-    val settingList = viewModel.getDataSettingUI()
-        .observeAsState()
-        .value
+    val dataListLive = viewModel.getDataListUI()
+    val settingListLive = viewModel.getDataSettingUI()
+
+    val dataList = dataListLive.observeAsState().value
+    val settingList = settingListLive.observeAsState().value
+
+    //val flow:Flow<List<Message>> = flowOf()
+    //val rt = flow.collectAsState(Message(0) )
+
 
     val dataContainerList = createDataContainer(dataList,settingList)
 
-    val messageList = viewModel.getMessageListUI().observeAsState().value
+    val messageListSystem = viewModel.getMessageListUI().observeAsState().value
+
+
 
     val connectInfo = viewModel.getConnectInfoUI()
 
@@ -65,13 +76,30 @@ fun DataScreen(viewModel: MainViewModel,
 
                 ) {
                     tabs.forEach { tab ->
+                        var color = LocalContentColor.current
+
+                        if (tab.name==DataScreenTab.MESSAGE.name && !messageListSystem.isNullOrEmpty()){
+
+                            //messageListSystem.find { it.type == 2 }
+                            messageListSystem.forEach {message->
+                                when(message.type){
+                                    1 -> {color = Color.Yellow}
+                                    2 -> {color = Color.Red }
+                                }
+
+                            }
+                        }
+
+
+
+
                         BottomNavigationItem(
                             icon = { Icon(imageVector = tab.icon, contentDescription = null) },
                             label = { Text(text = stringResource(tab.title), color = Color.White) },
                             selected = tab == selectedTab,
                             onClick = { viewModel.selectTab(tab.title) },
-                            selectedContentColor = LocalContentColor.current,
-                            unselectedContentColor = LocalContentColor.current,
+                            selectedContentColor = color,
+                            unselectedContentColor = color
                         )
                     }
                 }
@@ -91,9 +119,11 @@ fun DataScreen(viewModel: MainViewModel,
 
                     DataScreenTab.MESSAGE -> MessageScreen(
                         dataContainerList,
-                        messageList,
+                        messageListSystem,
                         loadingIsComplete,
-                        deleteMessage = {viewModel.deleteMessageUI(it)}
+                        deleteMessage = {
+                            viewModel.deleteMessageUI(it)
+                        }
                     )
 
                     DataScreenTab.CONTROL -> ControlListScreen(

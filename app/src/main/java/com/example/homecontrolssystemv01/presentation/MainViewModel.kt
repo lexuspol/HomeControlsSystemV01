@@ -33,6 +33,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val getMessageList = GetMessageListUseCase(repository)
 
     private val deleteMessage = DeleteMessageUseCase(repository)
+    private val putMessageList = PutMessageUseCase(repository)
 
     private val closeConnect = CloseConnectUseCase(repository)
     private val getSsidList = GetListSsidUseCase(repository)
@@ -75,6 +76,14 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
             deleteMessage(time)
         }
 
+    }
+
+    fun putMessageListUI(list:List<Message>){
+
+        Log.d("HCS_putMessageListUI","${list.isEmpty()}")
+        viewModelScope.launch {
+            putMessageList(list)
+        }
     }
 
     fun getConnectSettingUI(): ConnectSetting = _connectSetting

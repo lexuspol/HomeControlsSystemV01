@@ -1,10 +1,12 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -24,9 +26,14 @@ fun ControlListScreen(
         val lightSleepOn = giveDataById(listDataContainer,23)
         val lightChildOn = giveDataById(listDataContainer,24)
 
+
+
         Column() {
             ButtonLight(lightSleepOn, id = 23, onControl)
             ButtonLight(lightChildOn, id = 24, onControl)
+
+
+
         }
 //
 //    } else {

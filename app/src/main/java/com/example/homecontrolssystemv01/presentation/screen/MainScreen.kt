@@ -6,11 +6,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.homecontrolssystemv01.presentation.MainViewModel
+import com.example.homecontrolssystemv01.util.createMessageListLimit
 
 @Composable
 fun MainScreen(viewModel:MainViewModel) {
 
     val dataList = viewModel.getDataListUI().observeAsState().value
+    val settingList = viewModel.getDataSettingUI().observeAsState().value
+
+    viewModel.putMessageListUI(createMessageListLimit(dataList,
+        settingList))
 
     val dataConnect = viewModel.getConnectInfoUI()
     val listSsid = viewModel.getSsidListForRadioButton()

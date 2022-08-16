@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class DataSettingDbModel(
     @PrimaryKey
     val id:Int=0,
+    val description:String="",
     val visible:Boolean=true,
     val limitMode:Boolean = false,
     val limitMax:Float = 0F,

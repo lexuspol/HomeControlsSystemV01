@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -107,41 +106,49 @@ fun LazyColumnCreate(
         .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        LazyColumn {
-            items(listDataContainer){ container ->
 
-                if (allList){
-                    if (container.id > 0) DataRow(container,onSettingChange,onControl)
-                }else{
-                    if (container.setting.visible) DataRow(container,onSettingChange,onControl)
+        Box(modifier = Modifier.weight(4f)){
+            LazyColumn {
+                items(listDataContainer){ container ->
+
+                    if (allList){
+                        if (container.id > 0) DataRow(container,onSettingChange,onControl)
+                    }else{
+                        if (container.setting.visible) DataRow(container,onSettingChange,onControl)
+                    }
+
+
                 }
-
-
-            }
-        }//lazyColumn
-
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-
-
-        ) {
-            Text(text = "${giveDataById(listDataContainer,-1,).data.value}",
-               // Modifier.padding(start = 5.dp),
-                style = MaterialTheme.typography.subtitle1)
-            Text(text = connectInfo.value.modeConnect.name,
-                // Modifier.padding(start = 5.dp),
-                style = MaterialTheme.typography.subtitle1)
-            Button(onClick = { allList = !allList },
-               // Modifier.padding(end = 5.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
-                Text(text = "All list",style = MaterialTheme.typography.subtitle1)
-            }
+            }//lazyColumn
         }
+
+
+        Box(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+                    .padding(bottom = 50.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+
+
+                ) {
+                Text(text = "${giveDataById(listDataContainer,-1,).data.value}",
+                    // Modifier.padding(start = 5.dp),
+                    style = MaterialTheme.typography.subtitle1)
+                Text(text = connectInfo.value.modeConnect.name,
+                    // Modifier.padding(start = 5.dp),
+                    style = MaterialTheme.typography.subtitle1)
+                Button(onClick = { allList = !allList },
+                    // Modifier.padding(end = 5.dp),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
+                    Text(text = "All list",style = MaterialTheme.typography.subtitle1)
+                }
+            }
+
+        }
+
         //Spacer(modifier = Modifier.size(20.dp))
 
 
@@ -165,9 +172,10 @@ fun DataRow(dataContainer: DataContainer,
     Card(
         modifier = Modifier
             .padding(8.dp, 4.dp)
-            .fillMaxWidth()
+            .fillMaxWidth(),
             // .background(Purple500)
-            .height(50.dp), shape = RoundedCornerShape(8.dp), elevation = 4.dp,
+   //         .height(50.dp),
+        shape = RoundedCornerShape(8.dp), elevation = 4.dp,
 
         //contentColor = Purple500,
         //backgroundColor = Purple500
@@ -346,6 +354,7 @@ private fun MyAlertDialog(data: Data,
                         onDismiss()
                         onSettingChange(DataSetting(
                             id = data.id,
+                            description = data.description,
                             visible = checkedStateVisible.value,
                             limitMode = checkedStateLimit.value,
                             limitMax = if (!errorStateMax.value) stringLimittoFlout(textLimitMax) else setting.limitMax,

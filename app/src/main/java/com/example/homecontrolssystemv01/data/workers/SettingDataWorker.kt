@@ -23,6 +23,7 @@ class SettingDataWorker(
             try {
                 val dataSetting = DataSettingDbModel(
                     inputDataMap[ID] as Int,
+                    inputDataMap[DESC] as String,
                     inputDataMap[VISIBLE] as Boolean,
                     inputDataMap[LIMIT_MODE] as Boolean,
                     inputDataMap[LIMIT_MAX] as Float,
@@ -47,6 +48,7 @@ class SettingDataWorker(
             const val LIMIT_MAX = "limitMax"
             const val LIMIT_MIN = "limitMin"
             const val SET_COUNTER = "setCounter"
+            const val DESC = "description"
 
             fun makeRequestOneTime(dataSetting: DataSetting): OneTimeWorkRequest {
                 return OneTimeWorkRequestBuilder<SettingDataWorker>()
@@ -59,6 +61,7 @@ class SettingDataWorker(
                 return Data.Builder()
                     .putAll(mapOf(
                         ID to dataSetting.id,
+                        DESC to dataSetting.description,
                     VISIBLE to dataSetting.visible,
                         LIMIT_MODE to dataSetting.limitMode,
                         LIMIT_MAX to dataSetting.limitMax,

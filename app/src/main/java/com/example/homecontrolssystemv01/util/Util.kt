@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.util
 
 import android.util.Log
+import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.domain.model.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -114,3 +115,40 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
     return visible
 
 }
+
+fun createMessageListLimit(dataList: List<Data>?, settingList: List<DataSetting>?):List<Message>{
+
+    val listMessage:MutableList<Message> = mutableListOf()
+
+    val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
+
+    dataList?.forEach {data->
+        if (data.type == 3) {                              //3 - Real type
+            if (data.value?.toFloatOrNull() != null){
+                listDataFloat.add(Pair(data.id,data.value.toFloat()))
+            }
+        }
+    }
+
+    settingList?.forEach { setting->
+        if (setting.limitMode){
+            listDataFloat.forEach { pair ->
+                if (pair.first == setting.id){
+                    when{
+                        (pair.second>setting.limitMax)  -> {
+                            listMessage.add(
+                                Message(Date().time,setting.id,1,"${setting.description}. Выше нормы"))}
+                        (pair.second<setting.limitMin)  -> {
+                            listMessage.add(
+                            Message(Date().time,setting.id,1,"${setting.description}. Ниже нормы"))}
+                        }
+                    }
+                }
+            }
+        }
+    return listMessage
+    }
+
+
+
+

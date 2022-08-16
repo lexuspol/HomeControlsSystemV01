@@ -62,19 +62,19 @@ class RefreshDataWorker(
 
                                 if(dataFirebase.isNullOrEmpty()){
                                     Log.d("HCS_RefreshDataWorker","Firebase NO data")
-                                    dataDao.insertMessage(MessageDbModel(Date().time,1,"Firebase NO data"))
+                                    dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase NO data"))
                                     errorCount += 1
                                     whileLoop = true
                                 } else{
                                     dataDao.insertValue(dataFirebase)
                                     Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
-                                    dataDao.insertMessage(MessageDbModel(Date().time,0,"Зарузка из Firebase"))
+                                    dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Зарузка из Firebase"))
                                     whileLoop = false
                                 }
 
                             }else{
                                 Log.d("HCS_RefreshDataWorker","Firebase Empty Snapshot")
-                                dataDao.insertMessage(MessageDbModel(Date().time,1,"Firebase empty"))
+                                dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase empty"))
                                 errorCount += 1
                                 whileLoop = true
                             }
@@ -87,12 +87,14 @@ class RefreshDataWorker(
                             dataDao.insertValue(dataFromApiServer)
                             myRef.setValue(dataFromApiServer)
                             Log.d("HCS_RefreshDataWorker","Write to DB/Firebase from Network")
-                            dataDao.insertMessage(MessageDbModel(Date().time,1,"Сервер.Обновление данных"))
+                            dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Сервер.Обновление данных"))
+
                             whileLoop = false
                         }
-                        !remoteMode && !serverMode ->{
-                                dataDao.insertValue(runApiService())
-
+                        !remoteMode && !serverMode ->{//local mode
+                            val dataFromApiServer = runApiService()
+                            dataDao.insertValue(dataFromApiServer)
+                            dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Загрузка данных"))
 
                             //можно включить переодический опрос
                              //delay(periodTime*1000-delayTime)
@@ -115,7 +117,7 @@ class RefreshDataWorker(
                 if (errorCount>limitErrorCount) {
                     whileLoop = false
                     Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount")
-                    dataDao.insertMessage(MessageDbModel(Date().time,2,"Ошибка загрузки данных"))
+                    dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка загрузки данных"))
                     resultWork = Result.failure()
                 }else{
                     resultWork = Result.success()
@@ -135,7 +137,7 @@ class RefreshDataWorker(
             data
         } catch (e : Exception){
             Log.d("HCS_RefreshDataWorker", "getFirebaseData error = $e")
-            dataDao.insertMessage(MessageDbModel(Date().time,2,"Error Firebase"))
+            dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Error Firebase"))
             null
         }
     }
@@ -149,13 +151,14 @@ class RefreshDataWorker(
         val jsonContainer = apiService.getData()
         val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
         Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
-        dataDao.insertMessage(MessageDbModel(Date().time,0,"Загрузка данных"))
+
         val dataDbModelList = dataDtoList.map {
             mapper.valueDtoToDbModel(it)
         }
 
         return dataDbModelList
     }
+
 
 
     companion object {

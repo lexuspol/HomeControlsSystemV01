@@ -25,11 +25,10 @@ fun MessageScreen(
 ){
 
     if (messageList.isNullOrEmpty()){
-        CustomLinearProgressBar()
+        Text(text = "No message",
+            style = MaterialTheme.typography.subtitle2)
     }else{
-        MessageList(
-            messageList.reversed(),
-            deleteMessage )
+        MessageList(messageList.reversed(),deleteMessage )
     }
 
 
@@ -38,7 +37,7 @@ fun MessageScreen(
 @Composable
 fun MessageList(messageList:List<Message>, deleteMessage: (Long) -> Unit){
 
-    val checkedStateVisible = remember { mutableStateOf(true) }
+    val checkedStateVisible = remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -46,42 +45,53 @@ fun MessageList(messageList:List<Message>, deleteMessage: (Long) -> Unit){
             .fillMaxHeight(),
     verticalArrangement = Arrangement.SpaceBetween
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .padding(10.dp)
-        ) {
-            items(messageList){container->
-                if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
-                    if (container.type!=0) ListRow(container,deleteMessage)
+
+        Box(modifier = Modifier.weight(4f)) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(10.dp)
+            ) {
+                items(messageList){container->
+                    if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
+                        if (container.type!=0) ListRow(container,deleteMessage)
+                    }
                 }
             }
         }
-        //Spacer(modifier = Modifier.size(20.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(text = "System message",
-                // Modifier.padding(start = 5.dp),
-                style = MaterialTheme.typography.subtitle1)
+        Box(modifier = Modifier.weight(1f)) {
 
-            Switch(checked = checkedStateVisible.value, onCheckedChange = {
-                checkedStateVisible.value = it
-            })
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+ //                   .padding(bottom = 50.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(text = "System message",
+                    // Modifier.padding(start = 5.dp),
+                    style = MaterialTheme.typography.subtitle1)
 
-            Button(onClick = { deleteMessage(0L) },
-                // Modifier.padding(end = 5.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
-                Text(text = "Delete all",style = MaterialTheme.typography.subtitle1)
+                Switch(checked = checkedStateVisible.value, onCheckedChange = {
+                    checkedStateVisible.value = it
+                })
+
+                Button(onClick = { deleteMessage(0L) },
+                    // Modifier.padding(end = 5.dp),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
+                    Text(text = "Delete all",style = MaterialTheme.typography.subtitle1)
+                }
+
+
+
             }
 
-
-
         }
+
+        //Spacer(modifier = Modifier.size(20.dp))
+
+
 
     }
 
@@ -98,34 +108,48 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
         modifier = Modifier
             .padding(8.dp, 4.dp)
             .fillMaxWidth()
+            .clickable { deleteMessage(message.time) }
+            ,
+
             // .background(Purple500)
-            .height(50.dp), shape = RoundedCornerShape(8.dp), elevation = 4.dp,
+ //           .height(50.dp),
+        //shape = RoundedCornerShape(8.dp),
+        elevation = 4.dp,
 
         //contentColor = Purple500,
         //backgroundColor = Purple500
     ) {
 
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-                .clickable {
-                    deleteMessage(message.time)
-                }
+        Column() {
+            Text(text = when(message.type) {
+                0->"System message"
+                1->"Warning message"
+                2->"Alarm message"
+                else ->""
 
-        ) {
 
-            Text(text = message.type.toString(),
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.subtitle1
+            },
+                modifier = Modifier.padding(10.dp),
+                style = MaterialTheme.typography.subtitle2
             )
 
-            Text(text = message.description,
-                modifier = Modifier.weight(4f),
-                style = MaterialTheme.typography.subtitle1
-            )
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+            ) {
+
+
+
+                Text(text = message.description,
+                    modifier = Modifier.weight(4f),
+                    style = MaterialTheme.typography.body1
+                )
+
+            }
 
         }
+
 
 
 
@@ -137,14 +161,12 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
 @Composable
 fun TestMessage(){
     val list = listOf<Message>(
-        Message(1,0,"Ошибка"),
-        Message(1,0,"Ошибка"),
-        Message(1,0,"Ошибка"),
-        Message(1,0,"Ошибка"),
-        Message(1,0,"Ошибка")
+
     )
 
+    fun test(id:Long){}
 
+   // MessageList(list) { test(0) }
 
     //DataRow(Data(23,"value","stateDoor",1,"description"))
 }
