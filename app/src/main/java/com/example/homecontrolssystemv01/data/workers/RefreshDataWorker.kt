@@ -3,18 +3,22 @@ package com.example.homecontrolssystemv01.data.workers
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.util.createMessageListLimit
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
+import java.io.IOException
 import java.util.*
 
 
@@ -24,6 +28,8 @@ class RefreshDataWorker(
     context: Context,
     workerParameters: WorkerParameters
 ) : CoroutineWorker(context, workerParameters) {
+
+    private val listDescription = context.resources.getStringArray(R.array.data)
 
     private val apiService = ApiFactory.apiService
 
@@ -35,7 +41,7 @@ class RefreshDataWorker(
 
     private val mapper = DataMapper()
 
-    private val serverMode = workerParameters.inputData.getBoolean(NAME_SERVER_MODE,false)
+    //private val serverMode = workerParameters.inputData.getBoolean(NAME_SERVER_MODE,false)
     private val remoteMode = workerParameters.inputData.getBoolean(NAME_REMOTE_MODE,false)
 
     private val delayTime:Long = 1000//milliSeconds
@@ -45,17 +51,40 @@ class RefreshDataWorker(
 
         override suspend fun doWork(): Result {
 
+
+
             var resultWork: Result
             var whileLoop = false//цикл делаем если LOCAL или при ошибке
             var errorCount = 0
+
 
             do{
 
                 try {
                     //delay(delayTime)//немного ждем, так как бывает вылетает ошибка
 
-                    when{
-                        remoteMode ->{
+
+
+                    when(remoteMode){
+
+                        false -> {//local mode
+                            val dataFromApiServer = runApiService()
+
+                            dataDao.insertValue(dataFromApiServer)
+                            dataDao.insertMessage(
+                                MessageDbModel(
+                                    Date().time,
+                                    0,
+                                    0,
+                                    "Загрузка данных"
+                                )
+                            )
+                            createMessageAndInsertToBase(dataFromApiServer)
+
+                        }
+
+                        true->{//remote mode
+
                             val dataSnapshot = getFirebaseData()
                             if ( dataSnapshot!= null) {
                                 val dataFirebase = dataSnapshot.getValue<List<DataDbModel>>()
@@ -69,7 +98,9 @@ class RefreshDataWorker(
                                     dataDao.insertValue(dataFirebase)
                                     Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
                                     dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Зарузка из Firebase"))
-                                    whileLoop = false
+
+                                    createMessageAndInsertToBase(dataFirebase)
+
                                 }
 
                             }else{
@@ -78,45 +109,35 @@ class RefreshDataWorker(
                                 errorCount += 1
                                 whileLoop = true
                             }
-
-
                         }
 
-                        serverMode ->{
-                            val dataFromApiServer = runApiService()
-                            dataDao.insertValue(dataFromApiServer)
-                            myRef.setValue(dataFromApiServer)
-                            Log.d("HCS_RefreshDataWorker","Write to DB/Firebase from Network")
-                            dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Сервер.Обновление данных"))
-
-                            whileLoop = false
-                        }
-                        !remoteMode && !serverMode ->{//local mode
-                            val dataFromApiServer = runApiService()
-                            dataDao.insertValue(dataFromApiServer)
-                            dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Загрузка данных"))
-
-                            //можно включить переодический опрос
-                             //delay(periodTime*1000-delayTime)
-                            //whileLoop = true
-                            whileLoop = false
-
-                        }
-                    }
+                    }//end when
 
 
-                    errorCount = 0
-                } catch (e: Exception) {
+                } catch (e: CancellationException) {
+
+                    //нужно ждать загрузку настроек Flow, потом закрывать скоуп, вылетает исключение
+
+                    //Log.d("HCS_RefreshDataWorker", e.toString())
+
+                } catch (e: IOException){
+
+                    //исключение ретрафит, нужно еще добавить для рум
+
                     Log.d("HCS_RefreshDataWorker", e.toString())
                     delay(delayTime)
                     whileLoop = true
                     errorCount += 1
-                    //resultWork = Result.success()
+
                 }
 
+
                 if (errorCount>limitErrorCount) {
-                    whileLoop = false
                     Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount")
+
+                    errorCount = 0
+                    whileLoop = false
+
                     dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка загрузки данных"))
                     resultWork = Result.failure()
                 }else{
@@ -142,8 +163,27 @@ class RefreshDataWorker(
         }
     }
 
+    private suspend fun createMessageAndInsertToBase(dataDbList:List<DataDbModel>) {
+
+        coroutineScope {
+
+            val dataList = dataDbList.map {
+                mapper.mapDataToEntity(it, listDescription)
+            }
 
 
+            val flow = dataDao.getSettingListFlow()
+
+            flow.collect() { list ->
+                val listSetting = list.map { mapper.settingDbModelToEntity(it) }
+                val listMessage = createMessageListLimit(dataList, listSetting)
+                val listDbMessage = listMessage.map { mapper.mapEntityToMessage(it) }
+                dataDao.insertMessageList(listDbMessage)
+                this.coroutineContext.cancel()//вылетае исключение
+
+            }
+        }
+    }
 
 
     private suspend fun runApiService():List<DataDbModel>{
@@ -155,7 +195,6 @@ class RefreshDataWorker(
         val dataDbModelList = dataDtoList.map {
             mapper.valueDtoToDbModel(it)
         }
-
         return dataDbModelList
     }
 
@@ -163,20 +202,9 @@ class RefreshDataWorker(
 
     companion object {
 
-        const val NAME_PERIODIC = "RefreshDataWorker_PERIODIC"
         const val NAME_ONE_TIME = "RefreshDataWorker_ONE_TIME"
-        const val NAME_SERVER_MODE = "Server_MODE"
         const val NAME_REMOTE_MODE = "Remote_MODE"
 
-
-
-        fun makeRequestPeriodic(serverMode: Boolean, remoteMode:Boolean): PeriodicWorkRequest {
-            return PeriodicWorkRequestBuilder<RefreshDataWorker>(20,
-                TimeUnit.MINUTES)
-                .setConstraints(makeConstraints())
-                .setInputData(modeToData(serverMode,remoteMode))
-                .build()
-        }
 
         fun makeRequestOneTime(serverMode: Boolean, remoteMode:Boolean): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
@@ -187,7 +215,6 @@ class RefreshDataWorker(
 
         private fun modeToData(serverMode: Boolean, remoteMode:Boolean): Data {
             return Data.Builder()
-                .putBoolean(NAME_SERVER_MODE,serverMode)
                 .putBoolean(NAME_REMOTE_MODE,remoteMode)
                 .build()
         }

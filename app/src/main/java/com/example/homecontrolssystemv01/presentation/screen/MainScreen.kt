@@ -14,12 +14,13 @@ fun MainScreen(viewModel:MainViewModel) {
     val dataList = viewModel.getDataListUI().observeAsState().value
     val settingList = viewModel.getDataSettingUI().observeAsState().value
 
-    viewModel.putMessageListUI(createMessageListLimit(dataList,
-        settingList))
+    //viewModel.putMessageListUI(createMessageListLimit(dataList,
+        //settingList))
 
-    val dataConnect = viewModel.getConnectInfoUI()
-    val listSsid = viewModel.getSsidListForRadioButton()
-    val dataSetting = viewModel.getConnectSettingUI()
+    val connectInfo = viewModel.getConnectInfoUI()
+    //val listSsid = viewModel.getSsidListForRadioButton()
+    //val prefSsid
+    val connectSetting = viewModel.getConnectSettingUI()
 
     val navController = rememberNavController()
 
@@ -29,7 +30,7 @@ fun MainScreen(viewModel:MainViewModel) {
                     selectSetting = {navController.navigate(NavScreen.SettingScreen.route)})
             }
             composable(NavScreen.SettingScreen.route) {
-                SettingScreen(listSsid,dataSetting,dataList,dataConnect,
+                SettingScreen(connectSetting,connectInfo,
                     onValueChange = {viewModel.setDataSetting(it)}
                 ){navController.navigateUp()}
             }

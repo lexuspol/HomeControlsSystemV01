@@ -16,9 +16,9 @@ import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
-import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
+import com.example.homecontrolssystemv01.data.workers.PeriodicDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.data.workers.SettingDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
@@ -60,7 +60,8 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
                 //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
             } else{
 
-                startLoad(ssidFromWiFi)
+                //startLoad(ssidFromWiFi)
+                selectDataSource(ssidFromWiFi)
             }
         }
     }
@@ -110,7 +111,12 @@ override fun getDataList(): LiveData<List<Data>> {
     }
 
     override suspend fun putMessageList(listMessage: List<Message>) {
-        dataDao.insertMessageList(listMessage.map { mapper.mapEntityToMessage(it) })
+//        Log.d("HCS_MainRepositoryImpl","putMessageList")
+//        //dataDao.insertMessageList(listMessage.map { mapper.mapEntityToMessage(it) })
+//       val info =  workManager.getWorkInfosForUniqueWork(ControlDataWorker.NAME_WORKER_CONTROL).await()
+//        info.forEach {
+//            Log.d("HCS_MainRepositoryImpl","Worker ${it.id} - state ${it.state.name}")
+//        }
     }
 
     override suspend fun deleteMessage(time: Long) {
@@ -144,7 +150,6 @@ override fun getDataList(): LiveData<List<Data>> {
 
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
         application.registerReceiver(wifiScanReceiver, intentFilter)
-
     }
 
     override fun closeConnect() {
@@ -156,9 +161,9 @@ override fun getDataList(): LiveData<List<Data>> {
     }
 
     override fun putControl(controlInfo: ControlInfo) {
-        //dataDao.getSettingList()
 
         if (_connectInfo.value.modeConnect == ModeConnect.LOCAL){
+
             workManager.enqueueUniqueWork(
                 ControlDataWorker.NAME_WORKER_CONTROL,
                 ExistingWorkPolicy.REPLACE,
@@ -166,99 +171,126 @@ override fun getDataList(): LiveData<List<Data>> {
         }else{
             Log.d("HCS_MainRepositoryImpl","CONTROL - NOT, MODE - ${_connectInfo.value.modeConnect}")
         }
-
     }
 
-    override fun putDataSetting(dataSetting:DataSetting) {
+    override suspend fun putDataSetting(dataSetting:DataSetting) {
 
-
-        workManager.enqueueUniqueWork(
-            SettingDataWorker.NAME_WORKER_SETTING,
-            ExistingWorkPolicy.REPLACE,
-            SettingDataWorker.makeRequestOneTime(dataSetting)
-        )
+       dataDao.insertDataSetting(mapper.settingToDbModel(dataSetting))
 
 
 
-    }
-
-
-
-    private fun startLoad(ssidFromWiFi:String){
-
-        val ssidFromParameters = "\"${_connectSetting.ssid}\""
-
-        val connectInfo = ConnectInfo(ssidFromWiFi)
-
-         when{
-                (ssidFromWiFi == ssidFromParameters)&&_connectSetting.serverMode -> {
-                    connectInfo.modeConnect = ModeConnect.SERVER
-                }
-                (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
-                    connectInfo.modeConnect = ModeConnect.LOCAL
-//                    val status = workManager.getWorkInfosByTag(RefreshDataWorker.NAME_PERIODIC).get()
-//                    if (status.isEmpty()) {
-//                        Log.d("HCS_BroadcastReceiver","state work = pusto")
-//                    }else{
-//                        status[0].state.name
-//                        Log.d("HCS_BroadcastReceiver","state work = ${status.toString()}")
-//                    }
-                }
-                (ssidFromWiFi != ssidFromParameters)&&!_connectSetting.serverMode -> {
-                    connectInfo.modeConnect = ModeConnect.REMOTE
-                }
-                else -> connectInfo.modeConnect = ModeConnect.STOP
-            }
-
-        Log.d("HCS_BroadcastReceiver", "ssid = ${connectInfo.ssidConnect}, mode - ${connectInfo.modeConnect.name}")
-
-        _connectInfo.value = connectInfo
-        createWorker()
+//        workManager.enqueueUniqueWork(
+//            SettingDataWorker.NAME_WORKER_SETTING,
+//            ExistingWorkPolicy.REPLACE,
+//            SettingDataWorker.makeRequestOneTime(dataSetting)
+//        )
     }
 
 
+    private fun selectDataSource(ssidFromReceiver:String){
 
-    private fun createWorker(){
+        if (ssidFromReceiver == _connectSetting.ssid){
+            _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.LOCAL)
+            myRef.removeEventListener(valueEventListener)
+            startLocal(false)
 
-        myRef.removeEventListener(valueEventListener)
 
-        when (_connectInfo.value.modeConnect) {
-            ModeConnect.SERVER -> {
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-
-                workManager.enqueueUniquePeriodicWork(
-                    RefreshDataWorker.NAME_PERIODIC,
-                    ExistingPeriodicWorkPolicy.KEEP,
-                    RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode,false)
-                )
-                //Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
-
-            }
-            ModeConnect.LOCAL -> {
-
-                startLocal(false)
-                //Log.d("HCS_WorkManager","Mode.LOCAL - loadDataOneTime")
-
-            }
-            ModeConnect.REMOTE -> {
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                myRef.addValueEventListener(valueEventListener)
-                //Log.d("HCS_WorkManager","Mode.REMOTE - loadDataOneTime")
-
-            }
-            ModeConnect.STOP -> {
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-                //Log.d("HCS_WorkManager","Mode.STOP")
-            }
+        }else{
+            _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.REMOTE)
+            myRef.addValueEventListener(valueEventListener)
         }
 
-
     }
 
+
+
+//    private fun startLoad(ssidFromWiFi:String){
+//
+//        //val ssidFromParameters = "\"${_connectSetting.ssid}\""
+//        val ssidFromParameters = _connectSetting.ssid
+//
+//        val connectInfo = ConnectInfo(ssidFromWiFi)
+//
+//         when{
+//                (ssidFromWiFi == ssidFromParameters)&&_connectSetting.serverMode -> {
+//                    connectInfo.modeConnect = ModeConnect.SERVER
+//                }
+//                (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
+//                    connectInfo.modeConnect = ModeConnect.LOCAL
+////                    val status = workManager.getWorkInfosByTag(RefreshDataWorker.NAME_PERIODIC).get()
+////                    if (status.isEmpty()) {
+////                        Log.d("HCS_BroadcastReceiver","state work = pusto")
+////                    }else{
+////                        status[0].state.name
+////                        Log.d("HCS_BroadcastReceiver","state work = ${status.toString()}")
+////                    }
+//                }
+//                (ssidFromWiFi != ssidFromParameters)&&!_connectSetting.serverMode -> {
+//                    connectInfo.modeConnect = ModeConnect.REMOTE
+//                }
+//                else -> connectInfo.modeConnect = ModeConnect.STOP
+//            }
+//
+//        Log.d("HCS_BroadcastReceiver", "ssid = ${connectInfo.ssidConnect}, mode - ${connectInfo.modeConnect.name}")
+//
+//        _connectInfo.value = connectInfo
+//        //createWorker()
+//    }
+
+
+
+//    private fun createWorker(){
+//
+//        myRef.removeEventListener(valueEventListener)
+//
+//        when (_connectInfo.value.modeConnect) {
+//            ModeConnect.SERVER -> {
+//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+//
+//                workManager.enqueueUniquePeriodicWork(
+//                    RefreshDataWorker.NAME_PERIODIC,
+//                    ExistingPeriodicWorkPolicy.KEEP,
+//                    RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode,false)
+//                )
+//                //Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
+//
+//            }
+//            ModeConnect.LOCAL -> {
+//
+//                startLocal(false)
+//                //Log.d("HCS_WorkManager","Mode.LOCAL - loadDataOneTime")
+//
+//            }
+//            ModeConnect.REMOTE -> {
+//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+//                myRef.addValueEventListener(valueEventListener)
+//                //Log.d("HCS_WorkManager","Mode.REMOTE - loadDataOneTime")
+//
+//            }
+//            ModeConnect.STOP -> {
+//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
+//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+//                //Log.d("HCS_WorkManager","Mode.STOP")
+//            }
+//        }
+//
+//
+//    }
+
     private fun startLocal(remoteMode:Boolean){
-            workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
+
+        if (_connectSetting.serverMode && !remoteMode){
+            workManager.enqueueUniquePeriodicWork(
+                PeriodicDataWorker.NAME_PERIODIC,
+                ExistingPeriodicWorkPolicy.KEEP,
+                PeriodicDataWorker.makeRequestPeriodic()
+            )
+        }else{
+            workManager.cancelUniqueWork(PeriodicDataWorker.NAME_PERIODIC)
+        }
+
+           // workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
             workManager.enqueueUniqueWork(
                 RefreshDataWorker.NAME_ONE_TIME,
                 ExistingWorkPolicy.REPLACE,

@@ -19,10 +19,12 @@ interface DataRepository {
 
    fun putControl(controlInfo: ControlInfo)
 
-   fun putDataSetting(dataSetting:DataSetting)
+
    fun getDataSetting():LiveData<List<DataSetting>>
 
    fun getMessageList():LiveData<List<Message>>
+
+   suspend fun putDataSetting(dataSetting:DataSetting)
    suspend fun putMessageList(listMessage:List<Message>)
 
    suspend fun deleteMessage(time:Long)

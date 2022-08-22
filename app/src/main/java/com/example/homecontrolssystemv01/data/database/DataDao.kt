@@ -2,6 +2,7 @@ package com.example.homecontrolssystemv01.data.database
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 
 @Dao
@@ -11,6 +12,9 @@ interface DataDao {
 
     @Query("SELECT * FROM data_setting_list")
     fun getSettingList(): LiveData<List<DataSettingDbModel>>
+
+    @Query("SELECT * FROM data_setting_list")
+    fun getSettingListFlow(): Flow<List<DataSettingDbModel>>
 
     @Query("SELECT * FROM message_list")
     fun getMessageList(): LiveData<List<MessageDbModel>>

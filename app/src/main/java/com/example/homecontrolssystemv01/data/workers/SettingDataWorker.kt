@@ -9,7 +9,7 @@ import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.domain.model.DataSetting
 
 
-class SettingDataWorker(
+class SettingDataWorker(//удалить
     context: Context,
     workerParameters: WorkerParameters
 ) : CoroutineWorker(context, workerParameters) {

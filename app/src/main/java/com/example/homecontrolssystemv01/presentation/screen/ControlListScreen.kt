@@ -17,22 +17,38 @@ import com.example.homecontrolssystemv01.util.giveDataById
 
 @Composable
 fun ControlListScreen(
+    modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
-    loadingIsComplete:Boolean,
     onControl: (ControlInfo) -> Unit){
 
   //  if (loadingIsComplete){
 
-        val lightSleepOn = giveDataById(listDataContainer,23)
-        val lightChildOn = giveDataById(listDataContainer,24)
+    val lightLivingOn = giveDataById(listDataContainer,22)
+    val lightSleepOn = giveDataById(listDataContainer,23)
+    val lightChildOn = giveDataById(listDataContainer,24)
+    val lightCinemaOn = giveDataById(listDataContainer,25)
+    val lightSecondFloorOn = giveDataById(listDataContainer,26)
 
 
+        Column(modifier = modifier
+        ) {
+            CardSettingElement {
+                Column() {
 
-        Column() {
-            ButtonLight(lightSleepOn, id = 23, onControl)
-            ButtonLight(lightChildOn, id = 24, onControl)
+                        ButtonLight(lightLivingOn, id = 22, onControl)
+                        ButtonLight(lightSleepOn, id = 23, onControl)
 
 
+                        ButtonLight(lightChildOn, id = 24, onControl)
+                        ButtonLight(lightCinemaOn, id = 25, onControl)
+
+                    ButtonLight(lightSecondFloorOn, id = 26, onControl)
+                }
+
+                //калитка
+                //ворота в гараж
+                //вотора откатные
+            }
 
         }
 //
@@ -44,14 +60,23 @@ fun ControlListScreen(
 
 @Composable
 fun ButtonLight(dataContainer: DataContainer,id:Int,onValueChange: (ControlInfo) -> Unit){
+
+    var colorButton = Purple700
+    var colorText = Color.White
+
+    if (dataContainer.data.value.toString() == "1") {
+        colorButton = Color.Yellow
+        colorText = Purple700
+    }
+
     Button(
         onClick = {
             onValueChange(ControlInfo(id))
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
+            .padding(10.dp),
+        colors = ButtonDefaults.buttonColors(backgroundColor = colorButton)
 
     ) {
         Icon(
@@ -59,11 +84,11 @@ fun ButtonLight(dataContainer: DataContainer,id:Int,onValueChange: (ControlInfo)
             contentDescription = null,
             modifier = Modifier
                 .size(ButtonDefaults.IconSize),
-            tint = colorLight(dataContainer.data.value.toString())
+            tint = colorText
         )
         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
         Text(text = dataContainer.data.description,
-            color = colorLight(dataContainer.data.value.toString()),
+            color = colorText,
         style = MaterialTheme.typography.h6
 
 
@@ -73,6 +98,3 @@ fun ButtonLight(dataContainer: DataContainer,id:Int,onValueChange: (ControlInfo)
 
 
 
-fun colorLight(value: String):Color{
-    return if (value == "1") Color.Yellow else Color.White
-}

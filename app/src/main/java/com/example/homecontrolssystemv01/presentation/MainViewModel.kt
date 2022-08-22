@@ -58,7 +58,11 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
 
     fun putDataSettingUI(dataSetting:DataSetting){
-        putDataSetting(dataSetting)
+
+        viewModelScope.launch {
+            putDataSetting(dataSetting)
+        }
+
     }
 
     fun loadDataUI(){
@@ -68,7 +72,13 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
 
     fun getDataListUI(): LiveData<List<Data>> = getDataList()
-    fun getMessageListUI(): LiveData<List<Message>> = getMessageList()
+    fun getMessageListUI(): LiveData<List<Message>> {
+
+        putMessageListUI(listOf())
+
+        return getMessageList()
+
+    }
 
     fun deleteMessageUI(time:Long){
 
@@ -80,7 +90,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun putMessageListUI(list:List<Message>){
 
-        Log.d("HCS_putMessageListUI","${list.isEmpty()}")
+       // Log.d("HCS_putMessageListUI","${list.isEmpty()}")
         viewModelScope.launch {
             putMessageList(list)
         }
@@ -113,6 +123,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
             ssidList,
             ssidList.indexOf(_connectSetting.ssid))
     }
+
 
    // private val _isLoading: MutableState<Boolean> = mutableStateOf(false)
     //val isLoading: State<Boolean> get() = _isLoading

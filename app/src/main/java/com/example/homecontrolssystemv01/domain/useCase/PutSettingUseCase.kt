@@ -6,7 +6,7 @@ import com.example.homecontrolssystemv01.domain.model.DataSetting
 class PutSettingUseCase (
     private val repository: DataRepository,
 ) {
-    operator fun invoke(dataSetting:DataSetting) {
+    suspend operator fun invoke(dataSetting:DataSetting) {
         repository.putDataSetting(dataSetting)
     }
 }

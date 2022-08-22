@@ -8,6 +8,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -22,43 +23,96 @@ import com.example.homecontrolssystemv01.domain.model.Data
 import com.example.homecontrolssystemv01.domain.model.ConnectInfo
 import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.domain.model.ConnectSetting
+import com.example.homecontrolssystemv01.domain.model.ControlInfo
 import com.example.homecontrolssystemv01.ui.theme.Purple200
+import com.example.homecontrolssystemv01.ui.theme.Purple700
 
 @Composable
 fun SettingScreen(
-    listSsid:RadioButtonList,
     connectSetting: ConnectSetting,
-    listData:List<Data>?,
     connectInfo:MutableState<ConnectInfo>,
     onValueChange: (ConnectSetting) -> Unit,
     pressOnBack: () -> Unit = {}
-
 ){
 
     Scaffold (
         backgroundColor = MaterialTheme.colors.primarySurface,
  //       modifier = Modifier.padding(10.dp),
-        topBar = { AppBarSetting(pressOnBack)}){
-        val modifierScaffold = Modifier.padding(it)
+        topBar = { AppBarSetting(pressOnBack)})
+    { padding ->
+        //val modifierScaffold = Modifier.padding(padding)
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colors.primarySurface)
                 .fillMaxSize()
                 .padding(10.dp)
         ) {
-            Row() {
-                Text(text = "SSID WIFI ${connectInfo.value.ssidConnect}  ")
-                Text(text = "Mode ${connectInfo.value.modeConnect.name}")
+
+            CardSettingElement {
+                val modifierSet = Modifier.padding(5.dp)
+                Column(
+                    modifier = modifierSet
+                    ,
+                    horizontalAlignment = Alignment.Start
+                ){
+
+                    Text(text = "Имя текущей сети - ${connectInfo.value.ssidConnect}",
+                        modifier = modifierSet,
+                        style = MaterialTheme.typography.body1)
+                    Text(text = "Имя локальной сети - ${connectSetting.ssid}",
+                        modifier = modifierSet,
+                        style = MaterialTheme.typography.body1)
+                    Button(
+                        onClick = {
+                            onValueChange(ConnectSetting(connectInfo.value.ssidConnect, connectSetting.serverMode))
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700),
+
+                        ) {
+                        Text(text = "Сделать текущую сеть локальной",
+                            style = MaterialTheme.typography.body1)
+                    }
+
+                }
             }
+
+            CardSettingElement {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween) {
+
+                    val checkedState = remember { mutableStateOf(connectSetting.serverMode) }
+
+                    Text(text = "Периодический режим",style = MaterialTheme.typography.body1)
+
+                    Switch(
+                        checked = checkedState.value ,
+                        onCheckedChange = { state->
+                            checkedState.value = state
+                            connectSetting.serverMode=state
+                            onValueChange(connectSetting)
+                        })
+
+                }
+
+            }
+
+
             //Text(text = "Дата и время ${listData[0].value}")
-            Spacer(modifier = Modifier.size(20.dp))
-            MySwitch(connectSetting,onValueChange)
-            Spacer(modifier = Modifier.size(20.dp))
-            Text(text = "Домашняя SSID WIFI сеть",
-                style = MaterialTheme.typography.h6,
+            //Spacer(modifier = Modifier.size(20.dp))
+            //MySwitch(connectSetting,onValueChange)
+            //Spacer(modifier = Modifier.size(20.dp))
+           // Text(text = "Домашняя SSID WIFI сеть",
+               // style = MaterialTheme.typography.h6,
  //               modifier = Modifier.padding(16.dp)
-                               )
-            MyRadioButton(listSsid,connectSetting,onValueChange)
+            //                   )
+            //MyRadioButton(listSsid,connectSetting,onValueChange)
             //MyListData(listData)
 
         }
@@ -95,37 +149,7 @@ fun MyListData(listData:List<Data>) {
     }
 }
 
-@Composable
-fun MySwitch(connectSetting: ConnectSetting,
-             onValueChange: (ConnectSetting) -> Unit)
-{
-    val checkedState = remember { mutableStateOf(true) }
-    checkedState.value = connectSetting.serverMode
 
-    Row(
-        Modifier
-            .height(56.dp)
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    )
-    {
-        Switch(
-            checked = checkedState.value ,
-            onCheckedChange = {
-                checkedState.value = it
-                connectSetting.serverMode=it
-                onValueChange(connectSetting)
-            }
-
-        )
-        Text(
-            text = "SERVER MODE",
-            style = MaterialTheme.typography.body1.merge(),
-            modifier = Modifier.padding(start = 16.dp)
-        )
-
-    }
-}
 
 @Composable
 fun MyRadioButton (radioButtonList: RadioButtonList,

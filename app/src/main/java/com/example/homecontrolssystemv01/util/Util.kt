@@ -34,31 +34,31 @@ fun giveDataById(listContainer: MutableList<DataContainer>,id:Int):DataContainer
     return dataContainer
 }
 
-fun loadingIsComplete(dataList: List<Data>?,connectInfo:ConnectInfo, timeId:Int):Boolean{
-
-    var complete = false
-
-    val delayTime = when(connectInfo.modeConnect){
-        ModeConnect.LOCAL -> 5
-        ModeConnect.REMOTE -> 30
-        ModeConnect.SERVER -> 60
-        else -> 0
-    }
-
-
-    if (dataList.isNullOrEmpty()) {
-        complete = false
-    } else {
-        dataList.forEach { data->
-            if (data.id == timeId){
-                complete = difTime(data.value.toString())< delayTime*60*1000
-                return@forEach
-            }
-        }
-
-    }
-    return complete
-}
+//fun loadingIsComplete(dataList: List<Data>?,connectInfo:ConnectInfo, timeId:Int):Boolean{
+//
+//    var complete = false
+//
+//    val delayTime = when(connectInfo.modeConnect){
+//        ModeConnect.LOCAL -> 5
+//        ModeConnect.REMOTE -> 30
+//        ModeConnect.SERVER -> 60
+//        else -> 0
+//    }
+//
+//
+//    if (dataList.isNullOrEmpty()) {
+//        complete = false
+//    } else {
+//        dataList.forEach { data->
+//            if (data.id == timeId){
+//                complete = difTime(data.value.toString())< delayTime*60*1000
+//                return@forEach
+//            }
+//        }
+//
+//    }
+//    return complete
+//}
 
 fun difTime(date:String):Long{
 
@@ -116,13 +116,13 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
 
 }
 
-fun createMessageListLimit(dataList: List<Data>?, settingList: List<DataSetting>?):List<Message>{
+fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>):List<Message>{
 
     val listMessage:MutableList<Message> = mutableListOf()
 
     val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
 
-    dataList?.forEach {data->
+    dataList.forEach {data->
         if (data.type == 3) {                              //3 - Real type
             if (data.value?.toFloatOrNull() != null){
                 listDataFloat.add(Pair(data.id,data.value.toFloat()))
@@ -130,7 +130,7 @@ fun createMessageListLimit(dataList: List<Data>?, settingList: List<DataSetting>
         }
     }
 
-    settingList?.forEach { setting->
+    settingList.forEach { setting->
         if (setting.limitMode){
             listDataFloat.forEach { pair ->
                 if (pair.first == setting.id){
@@ -148,6 +148,13 @@ fun createMessageListLimit(dataList: List<Data>?, settingList: List<DataSetting>
         }
     return listMessage
     }
+
+fun convertLongToTime(time: Long): String {
+    val date = Date(time)
+    val format = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
+    return format.format(date)
+}
+
 
 
 

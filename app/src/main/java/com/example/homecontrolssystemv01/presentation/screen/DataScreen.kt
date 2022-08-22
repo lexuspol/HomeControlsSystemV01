@@ -3,6 +3,7 @@ package com.example.homecontrolssystemv01.presentation.screen
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -24,7 +25,6 @@ import com.example.homecontrolssystemv01.domain.model.Message
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createDataContainer
 import com.example.homecontrolssystemv01.util.createMessageListLimit
-import com.example.homecontrolssystemv01.util.loadingIsComplete
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -39,32 +39,15 @@ fun DataScreen(viewModel: MainViewModel,
     val dataList = dataListLive.observeAsState().value
     val settingList = settingListLive.observeAsState().value
 
-    //val flow:Flow<List<Message>> = flowOf()
-    //val rt = flow.collectAsState(Message(0) )
-
 
     val dataContainerList = createDataContainer(dataList,settingList)
 
     val messageListSystem = viewModel.getMessageListUI().observeAsState().value
 
-
-
     val connectInfo = viewModel.getConnectInfoUI()
 
-    val loadingIsComplete = loadingIsComplete(dataList, connectInfo.value,-1)
-
-    //val isLoading: Boolean by viewModel.isLoading
     val selectedTab = DataScreenTab.getTabFromResource(viewModel.selectedTab.value)
     val tabs = DataScreenTab.values()
-
-
-
-
-
-
-
-
-
 
 
        Scaffold(
@@ -80,14 +63,16 @@ fun DataScreen(viewModel: MainViewModel,
 
                         if (tab.name==DataScreenTab.MESSAGE.name && !messageListSystem.isNullOrEmpty()){
 
-                            //messageListSystem.find { it.type == 2 }
-                            messageListSystem.forEach {message->
-                                when(message.type){
-                                    1 -> {color = Color.Yellow}
-                                    2 -> {color = Color.Red }
-                                }
+                            val alarm = messageListSystem.find { it.type==2 }
+                            val warning = messageListSystem.find { it.type==1 }
 
+                            when{
+                                (alarm !=null) ->  {
+                                    color = Color.Red
+                                }
+                                (warning!=null) -> color = Color.Yellow
                             }
+
                         }
 
 
@@ -105,12 +90,12 @@ fun DataScreen(viewModel: MainViewModel,
                 }
             }
         ) { innerPadding ->
-            val modifier = Modifier.padding(innerPadding)
+            val modifier = Modifier.padding(innerPadding).fillMaxHeight()
             Crossfade(selectedTab) { destination ->
                 when (destination) {
                     DataScreenTab.DATA -> DataListScreen(
+                        modifier = modifier,
                         dataContainerList,
-                        loadingIsComplete,
                         connectInfo,
                         onSettingChange = {viewModel.putDataSettingUI(it)},
                     onControl = {viewModel.putControlUI(it)},
@@ -118,17 +103,16 @@ fun DataScreen(viewModel: MainViewModel,
                     )
 
                     DataScreenTab.MESSAGE -> MessageScreen(
-                        dataContainerList,
+                        modifier = modifier,
                         messageListSystem,
-                        loadingIsComplete,
                         deleteMessage = {
                             viewModel.deleteMessageUI(it)
                         }
                     )
 
                     DataScreenTab.CONTROL -> ControlListScreen(
+                        modifier = modifier,
                         dataContainerList,
-                        loadingIsComplete,
                         onControl = {viewModel.putControlUI(it)}
                     )
                 }

@@ -46,6 +46,17 @@ class DataMapper {
 
     )
 
+    fun settingToDbModel(dataSetting:DataSetting) = DataSettingDbModel(
+        id = dataSetting.id,
+        description = dataSetting.description,
+        visible= dataSetting.visible,
+        limitMode = dataSetting.limitMode,
+        limitMax= dataSetting.limitMax,
+        limitMin= dataSetting.limitMin,
+        setCounter = dataSetting.setCounter
+
+    )
+
 
         fun mapDataToEntity(dataDb: DataDbModel,
                             listDescription:Array<String>
