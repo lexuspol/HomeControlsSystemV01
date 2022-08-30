@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.domain.model.*
@@ -119,7 +121,17 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
         modifier = Modifier
             .padding(8.dp, 4.dp)
             .fillMaxWidth()
+
+//            .background(                          //цвет за контентом
+//                color = when (message.type) {
+//                    0 -> Color.White
+//                    1 -> Color.Yellow
+//                    2 -> Color.Red
+//                    else -> Color.Gray
+//                }
+//            )
             .clickable { deleteMessage(message.time) }
+
             ,
 
             // .background(Purple500)
@@ -130,35 +142,53 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
         //contentColor = Purple500,
         //backgroundColor = Purple500
     ) {
+        Surface(
+            //           modifier = Modifier.background(Purple500),
+            color = when (message.type) {
+                    0 -> Color.White
+                    1 -> Color.Yellow
+                    2 -> Color.Red
+                    else -> Color.Gray
+                }
+        ) {
 
-        Column() {
+            Column(
 
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = when(message.type) {
-                    0->"System message"
-                    1->"Warning message"
-                    2->"Alarm message"
-                    else ->""
-                },modifier = Modifier.padding(5.dp), style = MaterialTheme.typography.subtitle2
-                )
-                Text(text = convertLongToTime(message.time),
-                    modifier = Modifier.padding(5.dp),
-                    style = MaterialTheme.typography.subtitle2)
-            }
 
-            Text(text = message.description,
-                modifier = Modifier.padding(10.dp),
-                style = MaterialTheme.typography.body1)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = when (message.type) {
+                            0 -> "System message"
+                            1 -> "Warning message"
+                            2 -> "Alarm message"
+                            else -> ""
+                        },
+                        modifier = Modifier.padding(5.dp),
+                        style = MaterialTheme.typography.subtitle2
+                    )
+                    Text(
+                        text = convertLongToTime(message.time),
+                        modifier = Modifier.padding(5.dp),
+                        style = MaterialTheme.typography.subtitle2
+                    )
+                }
+
+                Text(
+                    text = message.description,
+                    modifier = Modifier.padding(10.dp),
+                    style = MaterialTheme.typography.body1
+                )
+
+            }//column
 
         }
-
-
 
 
     }
@@ -173,6 +203,9 @@ fun TestMessage(){
     )
 
     fun test(id:Long){}
+
+//    ListRow(message = Message(20202020,23,1,"Температура выше нормы", true),
+//        deleteMessage = {test(202020)})
 
    // MessageList(list) { test(0) }
 

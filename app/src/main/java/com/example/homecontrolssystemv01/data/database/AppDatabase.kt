@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(entities = [DataDbModel::class, DataSettingDbModel::class,MessageDbModel::class],
-    version = 6,
+    version = 8,
     exportSchema = false)
 abstract class AppDatabase: RoomDatabase() {
     companion object{

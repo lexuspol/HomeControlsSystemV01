@@ -42,7 +42,7 @@ class DataMapper {
         limitMode = dataSetting.limitMode,
         limitMax= dataSetting.limitMax,
         limitMin= dataSetting.limitMin,
-        setCounter = dataSetting.setCounter
+        unit = dataSetting.unit
 
     )
 
@@ -53,7 +53,7 @@ class DataMapper {
         limitMode = dataSetting.limitMode,
         limitMax= dataSetting.limitMax,
         limitMin= dataSetting.limitMin,
-        setCounter = dataSetting.setCounter
+        unit = dataSetting.unit
 
     )
 

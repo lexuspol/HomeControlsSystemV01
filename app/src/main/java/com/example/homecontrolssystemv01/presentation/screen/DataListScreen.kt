@@ -364,6 +364,7 @@ private fun MyAlertDialog(data: Data,
                             limitMode = checkedStateLimit.value,
                             limitMax = if (!errorStateMax.value) stringLimittoFlout(textLimitMax) else setting.limitMax,
                             limitMin = if (!errorStateMin.value) stringLimittoFlout(textLimitMin) else setting.limitMin,
+                            unit = data.unit
                            // setCounter = if(!errorStateSetCount.value&&data.type==2) textSetCount.toLong() else setting.setCounter,
                             //controlMode = if(checkedStateSetCounter.value) data.id else 0
                         ))

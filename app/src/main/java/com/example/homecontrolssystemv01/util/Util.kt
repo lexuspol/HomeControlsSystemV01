@@ -137,10 +137,18 @@ fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>)
                     when{
                         (pair.second>setting.limitMax)  -> {
                             listMessage.add(
-                                Message(Date().time,setting.id,1,"${setting.description}. Выше нормы"))}
+                                Message(
+                                    Date().time,
+                                    setting.id,
+                                    type = 1,
+                                    "${setting.description}. Выше ${setting.limitMax} ${setting.unit}"))}
                         (pair.second<setting.limitMin)  -> {
                             listMessage.add(
-                            Message(Date().time,setting.id,1,"${setting.description}. Ниже нормы"))}
+                            Message(
+                                Date().time,
+                                setting.id,
+                                type = 1,
+                                "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}"))}
                         }
                     }
                 }

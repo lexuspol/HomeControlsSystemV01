@@ -8,6 +8,6 @@ data class DataSetting(
     val limitMode:Boolean = false,
     val limitMax:Float = 0F,
     val limitMin:Float = 0F,
-    val setCounter:Long = 0L,
-    val controlMode:Int = 0
+    var unit:String = ""
+
 )

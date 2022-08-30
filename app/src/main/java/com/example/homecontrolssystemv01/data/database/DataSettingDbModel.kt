@@ -12,6 +12,6 @@ data class DataSettingDbModel(
     val limitMode:Boolean = false,
     val limitMax:Float = 0F,
     val limitMin:Float = 0F,
-    val setCounter:Long = 0L
+    var unit:String = ""
 
 )

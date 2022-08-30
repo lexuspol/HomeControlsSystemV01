@@ -5,14 +5,19 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
 import androidx.work.*
-import androidx.work.WorkManager
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
@@ -20,7 +25,6 @@ import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
 import com.example.homecontrolssystemv01.data.workers.PeriodicDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
-import com.example.homecontrolssystemv01.data.workers.SettingDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.Data
@@ -33,6 +37,12 @@ import com.google.firebase.ktx.Firebase
 
 
 class MainRepositoryImpl (private val application: Application): DataRepository {
+
+
+
+
+
+
 
     private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
@@ -92,6 +102,79 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
         }
     }
 
+
+    //////////////////////////////////
+
+
+
+
+
+    val request: NetworkRequest = NetworkRequest.Builder()
+        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+        .build()
+
+    val connectivityManager: ConnectivityManager =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            application.getSystemService(ConnectivityManager::class.java)
+        } else {
+            TODO("VERSION.SDK_INT < M")
+        }
+
+    val networkCallback = object : ConnectivityManager.NetworkCallback() {
+
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+        }
+
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+                if (networkCapabilities.transportInfo != null) {
+                    networkCapabilities.transportInfo as WifiInfo
+                }else{
+                    Log.d("HCS_connectivity","wifiInfo = null")
+                    null
+                }
+
+            } else {
+                TODO("VERSION.SDK_INT < Q")
+            }
+
+            val ssid = wifiInfo?.ssid
+
+            if (ssid != null) {
+
+                if (_connectInfo.value.ssidConnect == wifiInfo.ssid){                                    //!!!!
+                    Log.d("HCS_BroadcastReceiver","${wifiInfo.ssid} double")
+                } else{
+                    //startLoad(ssidFromWiFi)
+                    selectDataSource(wifiInfo.ssid)
+                }
+
+
+            }else{
+                Log.d("HCS_connectivity","ssid = null")
+            }
+
+
+
+
+        }
+    }
+
+
+
+
+
+    /////////////////////////////////////////////////
+
+
+
+
 override fun getDataList(): LiveData<List<Data>> {
 
     return Transformations.map(dataDao.getValueList()) { list ->
@@ -148,8 +231,22 @@ override fun getDataList(): LiveData<List<Data>> {
         //Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
         //        "Ssid = ${_connectSetting.ssid}")
 
-        intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-        application.registerReceiver(wifiScanReceiver, intentFilter)
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+       //     startConnectivity()
+     //   }else{
+            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
+            application.registerReceiver(wifiScanReceiver, intentFilter)
+     //   }
+    }
+
+    fun startConnectivity(){
+
+
+
+        //connectivityManager.requestNetwork(request, networkCallback); // For request
+        connectivityManager.registerNetworkCallback(request, networkCallback); // For listen
+        Log.w("HCS_connectivity", "registerNetworkCallback" )
+
     }
 
     override fun closeConnect() {
