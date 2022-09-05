@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.util
 
 import android.util.Log
+import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.domain.model.*
 import java.text.SimpleDateFormat
@@ -118,6 +119,8 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
 
 fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>):List<Message>{
 
+    var time = 0L
+
     val listMessage:MutableList<Message> = mutableListOf()
 
     val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
@@ -133,24 +136,31 @@ fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>)
     settingList.forEach { setting->
         if (setting.limitMode){
             listDataFloat.forEach { pair ->
+
                 if (pair.first == setting.id){
                     when{
                         (pair.second>setting.limitMax)  -> {
                             listMessage.add(
                                 Message(
-                                    Date().time,
+                                    Date().time+time,
                                     setting.id,
                                     type = 1,
-                                    "${setting.description}. Выше ${setting.limitMax} ${setting.unit}"))}
+                                    "${setting.description}. Выше ${setting.limitMax} ${setting.unit}"))
+                            //Log.d("HCS_Limit", "${setting.description}. Выше ${setting.limitMax} ${setting.unit}")
+                        }
+
                         (pair.second<setting.limitMin)  -> {
                             listMessage.add(
                             Message(
-                                Date().time,
+                                Date().time+time,
                                 setting.id,
                                 type = 1,
-                                "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}"))}
+                                "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}"))
+                            //Log.d("HCS_Limit", "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}")
+                        }
                         }
                     }
+                time += 1
                 }
             }
         }
@@ -161,6 +171,15 @@ fun convertLongToTime(time: Long): String {
     val date = Date(time)
     val format = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
     return format.format(date)
+}
+
+
+
+fun convertStringTimeToLong(time:String):Long{
+
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time)?.time?:0
+
+
 }
 
 

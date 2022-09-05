@@ -21,19 +21,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-
-
-
-
-
-
-
-
         setContent {
             HomeControlsSystemV01Theme {
                 //Surface(
                // ) {
-                    MainScreen(viewModel)
+                   MainScreen(viewModel)
                // Log.d("HCS_MainActivity", "start MainScreen(viewModel)")
               //  }
             }

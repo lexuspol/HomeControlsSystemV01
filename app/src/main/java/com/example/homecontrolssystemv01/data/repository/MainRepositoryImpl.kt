@@ -21,6 +21,7 @@ import androidx.work.*
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
+import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.ControlDataWorker
 import com.example.homecontrolssystemv01.data.workers.PeriodicDataWorker
@@ -34,15 +35,10 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
+import java.util.*
 
 
 class MainRepositoryImpl (private val application: Application): DataRepository {
-
-
-
-
-
-
 
     private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
@@ -79,14 +75,14 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
     private val myRef = Firebase.database(FIREBASE_URL).getReference(FIREBASE_PATH)
 
     //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
-    //запускаем слуателя в loadData
+    //запускаем слушателя в loadData
     private val valueEventListener: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
 
             val dataFirebase = snapshot.getValue<List<DataDbModel>>()
 
             if (dataFirebase != null) {
-                Log.d("HCS_FIREBASE", dataFirebase[0].value.toString())
+               // Log.d("HCS_FIREBASE", dataFirebase[0].value.toString())
 
                 startLocal(true)
 
@@ -109,62 +105,62 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
 
 
 
-    val request: NetworkRequest = NetworkRequest.Builder()
-        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-        .build()
-
-    val connectivityManager: ConnectivityManager =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            application.getSystemService(ConnectivityManager::class.java)
-        } else {
-            TODO("VERSION.SDK_INT < M")
-        }
-
-    val networkCallback = object : ConnectivityManager.NetworkCallback() {
-
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-        }
-
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities
-        ) {
-            val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-
-                if (networkCapabilities.transportInfo != null) {
-                    networkCapabilities.transportInfo as WifiInfo
-                }else{
-                    Log.d("HCS_connectivity","wifiInfo = null")
-                    null
-                }
-
-            } else {
-                TODO("VERSION.SDK_INT < Q")
-            }
-
-            val ssid = wifiInfo?.ssid
-
-            if (ssid != null) {
-
-                if (_connectInfo.value.ssidConnect == wifiInfo.ssid){                                    //!!!!
-                    Log.d("HCS_BroadcastReceiver","${wifiInfo.ssid} double")
-                } else{
-                    //startLoad(ssidFromWiFi)
-                    selectDataSource(wifiInfo.ssid)
-                }
-
-
-            }else{
-                Log.d("HCS_connectivity","ssid = null")
-            }
-
-
-
-
-        }
-    }
+//    val request: NetworkRequest = NetworkRequest.Builder()
+//        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+//        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+//        .build()
+//
+//    val connectivityManager: ConnectivityManager =
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            application.getSystemService(ConnectivityManager::class.java)
+//        } else {
+//            TODO("VERSION.SDK_INT < M")
+//        }
+//
+//    val networkCallback = object : ConnectivityManager.NetworkCallback() {
+//
+//        override fun onAvailable(network: Network) {
+//            super.onAvailable(network)
+//        }
+//
+//        override fun onCapabilitiesChanged(
+//            network: Network,
+//            networkCapabilities: NetworkCapabilities
+//        ) {
+//            val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//
+//                if (networkCapabilities.transportInfo != null) {
+//                    networkCapabilities.transportInfo as WifiInfo
+//                }else{
+//                    Log.d("HCS_connectivity","wifiInfo = null")
+//                    null
+//                }
+//
+//            } else {
+//                TODO("VERSION.SDK_INT < Q")
+//            }
+//
+//            val ssid = wifiInfo?.ssid
+//
+//            if (ssid != null) {
+//
+//                if (_connectInfo.value.ssidConnect == wifiInfo.ssid){                                    //!!!!
+//                    Log.d("HCS_BroadcastReceiver","${wifiInfo.ssid} double")
+//                } else{
+//                    //startLoad(ssidFromWiFi)
+//                    selectDataSource(wifiInfo.ssid)
+//                }
+//
+//
+//            }else{
+//                Log.d("HCS_connectivity","ssid = null")
+//            }
+//
+//
+//
+//
+//        }
+//    }
 
 
 
@@ -202,9 +198,19 @@ override fun getDataList(): LiveData<List<Data>> {
 //        }
     }
 
+    //узнать про исключения room
     override suspend fun deleteMessage(time: Long) {
         if (time==0L){
             dataDao.deleteAllMessage()
+
+            dataDao.insertMessage(
+                MessageDbModel(
+                    Date().time,
+                    0,
+                    0,
+                    "Все сообщения удалены")
+            )
+
         }else{
             dataDao.deleteMessage(time)
         }
@@ -223,10 +229,14 @@ override fun getDataList(): LiveData<List<Data>> {
 
     override fun loadData(connectSetting: ConnectSetting) {
 
+        _connectSetting = connectSetting
+        selectDataSource(wifiManager.connectionInfo.ssid)
+
         //dataDao.deleteMessage()
 
-        _connectSetting = connectSetting
-        _connectInfo.value.ssidConnect = ""//обнуляем сеть
+
+
+       // _connectInfo.value.ssidConnect = ""//обнуляем сеть
 
         //Log.d("HCS_fromMainViewModel","Server_Mode = ${_connectSetting.serverMode}, " +
         //        "Ssid = ${_connectSetting.ssid}")
@@ -234,20 +244,20 @@ override fun getDataList(): LiveData<List<Data>> {
         //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
        //     startConnectivity()
      //   }else{
-            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-            application.registerReceiver(wifiScanReceiver, intentFilter)
+            //intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
+            //application.registerReceiver(wifiScanReceiver, intentFilter)
      //   }
     }
 
-    fun startConnectivity(){
-
-
-
-        //connectivityManager.requestNetwork(request, networkCallback); // For request
-        connectivityManager.registerNetworkCallback(request, networkCallback); // For listen
-        Log.w("HCS_connectivity", "registerNetworkCallback" )
-
-    }
+//    fun startConnectivity(){
+//
+//
+//
+//        //connectivityManager.requestNetwork(request, networkCallback); // For request
+//        connectivityManager.registerNetworkCallback(request, networkCallback); // For listen
+//        Log.w("HCS_connectivity", "registerNetworkCallback" )
+//
+//    }
 
     override fun closeConnect() {
         application.unregisterReceiver(wifiScanReceiver)
@@ -390,7 +400,7 @@ override fun getDataList(): LiveData<List<Data>> {
            // workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
             workManager.enqueueUniqueWork(
                 RefreshDataWorker.NAME_ONE_TIME,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 RefreshDataWorker.makeRequestOneTime(_connectSetting.serverMode,remoteMode)
             )
 

@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.homecontrolssystemv01.domain.model.Message
+import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createDataContainer
 import com.example.homecontrolssystemv01.util.createMessageListLimit
@@ -43,6 +44,7 @@ fun DataScreen(viewModel: MainViewModel,
     val dataContainerList = createDataContainer(dataList,settingList)
 
     val messageListSystem = viewModel.getMessageListUI().observeAsState().value
+    //Log.d("HCS",messageListSystem.toString())
 
     val connectInfo = viewModel.getConnectInfoUI()
 
@@ -59,8 +61,8 @@ fun DataScreen(viewModel: MainViewModel,
 
                 ) {
                     tabs.forEach { tab ->
+                        //цвет MESSAGE
                         var color = LocalContentColor.current
-
                         if (tab.name==DataScreenTab.MESSAGE.name && !messageListSystem.isNullOrEmpty()){
 
                             val alarm = messageListSystem.find { it.type==2 }
@@ -78,13 +80,16 @@ fun DataScreen(viewModel: MainViewModel,
 
 
 
+
+
                         BottomNavigationItem(
                             icon = { Icon(imageVector = tab.icon, contentDescription = null) },
                             label = { Text(text = stringResource(tab.title), color = Color.White) },
                             selected = tab == selectedTab,
                             onClick = { viewModel.selectTab(tab.title) },
                             selectedContentColor = color,
-                            unselectedContentColor = color
+                            unselectedContentColor = color,
+
                         )
                     }
                 }
@@ -96,6 +101,7 @@ fun DataScreen(viewModel: MainViewModel,
                     DataScreenTab.DATA -> DataListScreen(
                         modifier = modifier,
                         dataContainerList,
+                        messageListSystem,
                         connectInfo,
                         onSettingChange = {viewModel.putDataSettingUI(it)},
                     onControl = {viewModel.putControlUI(it)},
@@ -113,6 +119,7 @@ fun DataScreen(viewModel: MainViewModel,
                     DataScreenTab.CONTROL -> ControlListScreen(
                         modifier = modifier,
                         dataContainerList,
+                        connectInfo,
                         onControl = {viewModel.putControlUI(it)}
                     )
                 }

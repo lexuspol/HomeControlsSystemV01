@@ -16,7 +16,7 @@ interface ApiService {
     @PUT("data.json?\"transmitDate\".buttonLightChild=1")
     suspend fun buttonLightChild(): DataJsonContainerDto
 
-    @PUT("data.json?\"transmitDate\".buttonLightChild=1")
+    @PUT("data.json?\"transmitDate\".buttonLightSleep=1")
     suspend fun buttonLightSleep(): DataJsonContainerDto
 
     @PUT("data.json")

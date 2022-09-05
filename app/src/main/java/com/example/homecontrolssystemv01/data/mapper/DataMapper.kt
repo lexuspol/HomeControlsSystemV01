@@ -90,8 +90,8 @@ class DataMapper {
 
 
 
-    private fun convertDateServerToDateUI(date:String?):String{
-        if (date == null) return ""
+    fun convertDateServerToDateUI(date:String?):String{
+        if (date == null) return "not time"
         return "${date.substring(4,14)} ${date.substring(15,23)}"
     }
 

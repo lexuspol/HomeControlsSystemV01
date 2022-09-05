@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,44 +30,36 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 fun DataListScreen(
     modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
+    messageList:List<Message>?,
     connectInfo:MutableState<ConnectInfo>,
     onSettingChange: (DataSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,
     onLoadData:() -> Unit
 ){
 
-    val color = when(connectInfo.value.modeConnect){
-        ModeConnect.SERVER -> Color.Gray
-        ModeConnect.LOCAL -> Color.White
-        ModeConnect.REMOTE -> Color.Yellow
-        ModeConnect.STOP -> Color.Red
-    }
+
+    var refreshing by remember { mutableStateOf(false) }
+  if (messageList.isNullOrEmpty()){
+      refreshing = false
+    }else{
+      val time = messageList.last().time
+      var timeRem by remember {mutableStateOf(messageList.last().time)}
+
+      if (refreshing) {
+          //Log.d("HCS_time=","$time")
+          //Log.d("HCS_timeRem=","$timeRem")
+          if (time == timeRem) {
+              refreshing = true
+          } else {
+              refreshing = false
+              timeRem = time//все работает норм
+          }
+
+      }
 
 
-    if (connectInfo.value.modeConnect == ModeConnect.LOCAL) {
 
-
-        var refreshing by remember { mutableStateOf(false) }
-
-        var timeRem by remember {
-            mutableStateOf(giveDataById(listDataContainer,-1).data.value.toString())
-        }
-        val time = giveDataById(listDataContainer, -1).data.value.toString()
-
-        if (refreshing) {
-            //Log.d("HCS_time=","$time")
-            //Log.d("HCS_timeRem=","$timeRem")
-            if (time == timeRem) {
-                refreshing = true
-            } else {
-                refreshing = false
-                timeRem = time
-            }
-
-            //Log.d("HCS_refreshing=","$refreshing")
-        }
-
-
+  }
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = refreshing),
             onRefresh = {
@@ -77,15 +70,7 @@ fun DataListScreen(
             LazyColumnCreate(modifier,listDataContainer, connectInfo,onSettingChange, onControl)
 
         }
-    }else{
-        LazyColumnCreate(modifier,listDataContainer, connectInfo,onSettingChange, onControl)
-    }
 
-//    if (loadingIsComplete){
-//
-//    } else {
-//        CustomLinearProgressBar()
-//    }
 
 
 }

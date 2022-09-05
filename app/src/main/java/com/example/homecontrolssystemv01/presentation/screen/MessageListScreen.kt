@@ -33,6 +33,7 @@ fun MessageScreen(
                 modifier = Modifier.padding(10.dp),
                 style = MaterialTheme.typography.body1)
         }else{
+
             MessageList(modifier,messageList.reversed(),deleteMessage )
         }
     }

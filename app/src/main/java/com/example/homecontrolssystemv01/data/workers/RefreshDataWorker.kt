@@ -10,8 +10,8 @@ import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.util.convertStringTimeToLong
 import com.example.homecontrolssystemv01.util.createMessageListLimit
-import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
@@ -20,9 +20,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.util.*
-
-
-import java.util.concurrent.TimeUnit
 
 class RefreshDataWorker(
     context: Context,
@@ -48,71 +45,75 @@ class RefreshDataWorker(
     private val periodTime:Long = 20//seconds
     private val limitErrorCount = 5//кол неудачных попыток, после чего результат - ошибка
 
+    private val idTime = -1
+    private val limitTimeRemote = 3600000L // 60 минут
 
-        override suspend fun doWork(): Result {
+    //private var dataFromDB = listOf<DataDbModel>()
 
 
+
+    override suspend fun doWork(): Result {
 
             var resultWork: Result
-            var whileLoop = false//цикл делаем если LOCAL или при ошибке
+            var whileLoop = false//цикл при ошибке
             var errorCount = 0
-
 
             do{
 
                 try {
-                    //delay(delayTime)//немного ждем, так как бывает вылетает ошибка
 
+                    var dataLocal = listOf<DataDbModel>()
+                    var dataRemove = listOf<DataDbModel>()
 
+                    if (!remoteMode){
 
-                    when(remoteMode){
+                        val dataFromApiServer = runApiService()
 
-                        false -> {//local mode
-                            val dataFromApiServer = runApiService()
+                        val timeFromApiServer = mapper.convertDateServerToDateUI(dataFromApiServer.find {
+                            it.id == idTime
+                        }?.value)
 
-                            dataDao.insertValue(dataFromApiServer)
-                            dataDao.insertMessage(
-                                MessageDbModel(
-                                    Date().time,
-                                    0,
-                                    0,
-                                    "Загрузка данных"
-                                )
-                            )
-                            createMessageAndInsertToBase(dataFromApiServer)
+                        Log.d("HCS_RefreshDataWorker", "timeLocal = $timeFromApiServer")
 
-                        }
+                        dataLocal = dataFromApiServer
 
-                        true->{//remote mode
+                    }
 
-                            val dataSnapshot = getFirebaseData()
-                            if ( dataSnapshot!= null) {
-                                val dataFirebase = dataSnapshot.getValue<List<DataDbModel>>()
+                    dataRemove = getRemoteData()
 
-                                if(dataFirebase.isNullOrEmpty()){
-                                    Log.d("HCS_RefreshDataWorker","Firebase NO data")
-                                    dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase NO data"))
-                                    errorCount += 1
-                                    whileLoop = true
-                                } else{
-                                    dataDao.insertValue(dataFirebase)
-                                    Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
-                                    dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Зарузка из Firebase"))
+                    val timeRemoteString = mapper.convertDateServerToDateUI(dataRemove.find {
+                        it.id == idTime
+                    }?.value)
 
-                                    createMessageAndInsertToBase(dataFirebase)
+                    Log.d("HCS_RefreshDataWorker", "timeRemote = $timeRemoteString")
 
-                                }
+                    val timeRemoteLong = convertStringTimeToLong(timeRemoteString)
 
-                            }else{
-                                Log.d("HCS_RefreshDataWorker","Firebase Empty Snapshot")
-                                dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase empty"))
-                                errorCount += 1
-                                whileLoop = true
-                            }
-                        }
+                    if (Date().time - timeRemoteLong > limitTimeRemote && errorCount==0){
 
-                    }//end when
+                        dataDao.insertMessage(
+                            MessageDbModel(
+                                Date().time,
+                                0,
+                                2,
+                                "Remote time error"))
 
+                    }
+
+                    val data = if (remoteMode)dataRemove else dataLocal
+
+                    dataDao.insertValue(data)
+
+                    if (errorCount==0){
+                        dataDao.insertMessage(
+                            MessageDbModel(
+                                Date().time,
+                                0,
+                                0,
+                                "Обновление данных"))
+                    }
+
+                    createMessageAndInsertToBase(data)
 
                 } catch (e: CancellationException) {
 
@@ -124,25 +125,34 @@ class RefreshDataWorker(
 
                     //исключение ретрафит, нужно еще добавить для рум
 
-                    Log.d("HCS_RefreshDataWorker", e.toString())
+                    Log.d("HCS_Worker_Error", e.toString())
                     delay(delayTime)
                     whileLoop = true
                     errorCount += 1
 
                 }
 
+                try {
+                    if (errorCount>limitErrorCount) {
+                        Log.d("HCS_Worker_Error", "errorCount = $errorCount")
 
-                if (errorCount>limitErrorCount) {
-                    Log.d("HCS_RefreshDataWorker", "errorCount = $errorCount")
+                        errorCount = 0
+                        whileLoop = false
 
-                    errorCount = 0
-                    whileLoop = false
+                        dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка загрузки локальных данных"))
+                        resultWork = Result.failure()
+                    }else{
+                        resultWork = Result.success()
+                    }
 
-                    dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка загрузки данных"))
+
+                }catch (e:Exception){
+                    dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка базы данных"))
                     resultWork = Result.failure()
-                }else{
-                    resultWork = Result.success()
                 }
+
+
+
 
 
 
@@ -152,16 +162,40 @@ class RefreshDataWorker(
             return resultWork
         }
 
-    private suspend fun getFirebaseData():DataSnapshot?{
-        return try{
-            val data = myRef.get().await()
-            data
+    private suspend fun getRemoteData():List<DataDbModel>{
+
+        var data = listOf<DataDbModel>()
+
+        val dataSnapshot = try{
+            myRef.get().await()
         } catch (e : Exception){
-            Log.d("HCS_RefreshDataWorker", "getFirebaseData error = $e")
+            Log.d("HCS_Worker_Error", "getFirebaseData error = $e")
             dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Error Firebase"))
             null
         }
+
+        if ( dataSnapshot!= null) {
+            val dataFirebase = dataSnapshot.getValue<List<DataDbModel>>()
+
+            if(dataFirebase.isNullOrEmpty()){
+                Log.d("HCS_Worker_Error","Firebase NO data")
+                dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase NO data"))
+            } else{
+                data = dataFirebase
+               // Log.d("HCS_RefreshDataWorker","Write to DB from Firebase")
+               // dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Зарузка из Firebase"))
+            }
+
+        }else{
+            Log.d("HCS_Worker_Error","Firebase Empty Snapshot")
+            dataDao.insertMessage(MessageDbModel(Date().time,0,1,"Firebase empty"))
+        }
+
+        return data
     }
+
+
+
 
     private suspend fun createMessageAndInsertToBase(dataDbList:List<DataDbModel>) {
 
@@ -176,9 +210,11 @@ class RefreshDataWorker(
 
             flow.collect() { list ->
                 val listSetting = list.map { mapper.settingDbModelToEntity(it) }
+               // Log.d("HCS_RefreshDataWorker", listSetting.toString())
                 val listMessage = createMessageListLimit(dataList, listSetting)
                 val listDbMessage = listMessage.map { mapper.mapEntityToMessage(it) }
                 dataDao.insertMessageList(listDbMessage)
+                //Log.d("HCS_RefreshDataWorker", listDbMessage.toString())
                 this.coroutineContext.cancel()//вылетае исключение
 
             }
@@ -186,11 +222,13 @@ class RefreshDataWorker(
     }
 
 
+
+
     private suspend fun runApiService():List<DataDbModel>{
 
         val jsonContainer = apiService.getData()
         val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
-        Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
+        //Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
 
         val dataDbModelList = dataDtoList.map {
             mapper.valueDtoToDbModel(it)
