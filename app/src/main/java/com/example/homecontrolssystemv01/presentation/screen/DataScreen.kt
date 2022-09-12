@@ -40,7 +40,7 @@ fun DataScreen(viewModel: MainViewModel,
     val dataList = dataListLive.observeAsState().value
     val settingList = settingListLive.observeAsState().value
 
-
+    //val dataContainerList = createDataContainer(dataListLive,settingList)
     val dataContainerList = createDataContainer(dataList,settingList)
 
     val messageListSystem = viewModel.getMessageListUI().observeAsState().value
@@ -105,7 +105,7 @@ fun DataScreen(viewModel: MainViewModel,
                         connectInfo,
                         onSettingChange = {viewModel.putDataSettingUI(it)},
                     onControl = {viewModel.putControlUI(it)},
-                        onLoadData = {viewModel.loadDataUI()}
+                        onLoadData = {viewModel.loadDataUI()},
                     )
 
                     DataScreenTab.MESSAGE -> MessageScreen(

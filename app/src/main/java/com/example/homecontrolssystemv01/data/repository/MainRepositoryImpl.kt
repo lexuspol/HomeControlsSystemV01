@@ -29,6 +29,7 @@ import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.Data
+import com.example.homecontrolssystemv01.util.convertLongToTime
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
@@ -58,19 +59,19 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
     var _connectInfo:MutableState<ConnectInfo> = mutableStateOf(ConnectInfo())
 
     //запускаем бродкаст, он следит за состоянием сети, если сеть изменилась, то вызывается метод
-    private val wifiScanReceiver = object : BroadcastReceiver() {
-
-        override fun onReceive(context: Context, intent: Intent) {
-            val ssidFromWiFi = wifiManager.connectionInfo.ssid  // метод устарел, но другой очень муторный
-            if (_connectInfo.value.ssidConnect == ssidFromWiFi){                                    //!!!!
-                //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
-            } else{
-
-                //startLoad(ssidFromWiFi)
-                selectDataSource(ssidFromWiFi)
-            }
-        }
-    }
+//    private val wifiScanReceiver = object : BroadcastReceiver() {
+//
+//        override fun onReceive(context: Context, intent: Intent) {
+//            val ssidFromWiFi = wifiManager.connectionInfo.ssid  // метод устарел, но другой очень муторный
+//            if (_connectInfo.value.ssidConnect == ssidFromWiFi){                                    //!!!!
+//                //Log.d("HCS_BroadcastReceiver","$ssidFromWiFi double")
+//            } else{
+//
+//                //startLoad(ssidFromWiFi)
+//                selectDataSource(ssidFromWiFi)
+//            }
+//        }
+//    }
 
     private val myRef = Firebase.database(FIREBASE_URL).getReference(FIREBASE_PATH)
 
@@ -189,31 +190,22 @@ override fun getDataList(): LiveData<List<Data>> {
         }
     }
 
-    override suspend fun putMessageList(listMessage: List<Message>) {
-//        Log.d("HCS_MainRepositoryImpl","putMessageList")
-//        //dataDao.insertMessageList(listMessage.map { mapper.mapEntityToMessage(it) })
-//       val info =  workManager.getWorkInfosForUniqueWork(ControlDataWorker.NAME_WORKER_CONTROL).await()
-//        info.forEach {
-//            Log.d("HCS_MainRepositoryImpl","Worker ${it.id} - state ${it.state.name}")
-//        }
+    override suspend fun putMessage(message: Message) {
+        dataDao.insertMessage(mapper.mapEntityToMessage(message))
     }
 
     //узнать про исключения room
     override suspend fun deleteMessage(time: Long) {
-        if (time==0L){
-            dataDao.deleteAllMessage()
 
-            dataDao.insertMessage(
-                MessageDbModel(
-                    Date().time,
-                    0,
-                    0,
-                    "Все сообщения удалены")
-            )
+        if (time==0L) dataDao.deleteAllMessage() else dataDao.deleteMessage(time)
 
-        }else{
-            dataDao.deleteMessage(time)
-        }
+//        dataDao.insertMessage(
+//            MessageDbModel(
+//                -2,
+//                -2,
+//                -2,
+//                "Delete data ${convertLongToTime(Date().time)}")
+//        )
 
     }
 
@@ -260,12 +252,12 @@ override fun getDataList(): LiveData<List<Data>> {
 //    }
 
     override fun closeConnect() {
-        application.unregisterReceiver(wifiScanReceiver)
+        //application.unregisterReceiver(wifiScanReceiver)
     }
 
-    override fun getSsidList():MutableList<String>{
-        return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
-    }
+//    override fun getSsidList():MutableList<String>{
+//        return wifiManager.scanResults.map { it.SSID.toString() } as MutableList<String>
+//    }
 
     override fun putControl(controlInfo: ControlInfo) {
 
@@ -298,13 +290,14 @@ override fun getDataList(): LiveData<List<Data>> {
 
         if (ssidFromReceiver == _connectSetting.ssid){
             _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.LOCAL)
-            myRef.removeEventListener(valueEventListener)
+            //myRef.removeEventListener(valueEventListener)
             startLocal(false)
 
 
         }else{
             _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.REMOTE)
-            myRef.addValueEventListener(valueEventListener)
+           // myRef.addValueEventListener(valueEventListener)
+            startLocal(true)
         }
 
     }

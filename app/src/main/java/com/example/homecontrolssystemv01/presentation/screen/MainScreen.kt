@@ -11,8 +11,8 @@ import com.example.homecontrolssystemv01.util.createMessageListLimit
 @Composable
 fun MainScreen(viewModel:MainViewModel) {
 
-    val dataList = viewModel.getDataListUI().observeAsState().value
-    val settingList = viewModel.getDataSettingUI().observeAsState().value
+    //val dataList = viewModel.getDataListUI().observeAsState().value
+    //val settingList = viewModel.getDataSettingUI().observeAsState().value
 
     //viewModel.putMessageListUI(createMessageListLimit(dataList,
         //settingList))

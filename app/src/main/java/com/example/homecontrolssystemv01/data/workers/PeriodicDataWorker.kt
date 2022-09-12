@@ -4,6 +4,9 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -29,7 +32,7 @@ class PeriodicDataWorker(
     workerParameters: WorkerParameters
 ) : CoroutineWorker(context, workerParameters) {
 
-    private val contextWorker= context
+    private val _context = context
 
     private val apiService = ApiFactory.apiService
 
@@ -44,6 +47,8 @@ class PeriodicDataWorker(
 
     private val notId = 1
 
+    private val idTime = -1//id дата время с JSON
+
     private val mapper = DataMapper()
 
     private val delayTime:Long = 2000//milliSeconds
@@ -54,7 +59,7 @@ class PeriodicDataWorker(
 
         createNotificationChannel()
 
-        val intent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
+        //val intent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         return NotificationCompat.Builder(applicationContext,CHANNEL_ID)
             .setContentTitle("Time update")
             .setContentText(time)
@@ -82,7 +87,7 @@ class PeriodicDataWorker(
 
 
 
-    fun createForegroundInfo(progress: String): ForegroundInfo {
+    private fun createForegroundInfo(progress: String): ForegroundInfo {
         return ForegroundInfo(notId, notification(progress))
     }
 
@@ -92,7 +97,7 @@ class PeriodicDataWorker(
             delay(delayTime)
 
             var resultWork: Result
-            var whileLoop = false//цикл делаем если LOCAL или при ошибке
+            var whileLoop = false//цикл при ошибке
             var errorCount = 0
 
 
@@ -100,20 +105,32 @@ class PeriodicDataWorker(
 
                 try {
 
-                    setForeground(createForegroundInfo("Загрузка"))
+                    setForeground(createForegroundInfo("Download"))
+
+                    //write to base
                     val dataFromApiServer = runApiService()
-                    //delay(60000)
                     dataDao.insertValue(dataFromApiServer)
                     myRef.setValue(dataFromApiServer)
-                    Log.d("HCS_PeriodicDataWorker","Write to DB/Firebase from Network")
-                    dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Периодическое обновление данных"))
 
+                    //Log
+                    val timeFromApiServer = mapper.convertDateServerToDateUI(dataFromApiServer.find {
+                        it.id == idTime
+                    }?.value)
+                    Log.d("HCS_PeriodicDataWorker","timePeriodic = $timeFromApiServer")
 
+                    val batteryPer = getBatteryPct()
 
+                    Log.d("HCS_PeriodicDataWorker","batteryPer = $batteryPer")
+                    apiService.setBatteryPer(batteryPer)
 
-//            download("12", "34", callback = {
-//                setForeground(createForegroundInfo(it))
-//            })
+                    //Message
+                    dataDao.insertMessage(
+                        MessageDbModel(
+                            Date().time,
+                            0,
+                            0,
+                            "Периодическое обновление данных"))
+
 
                     whileLoop = false
                     errorCount = 0
@@ -129,14 +146,20 @@ class PeriodicDataWorker(
 
                 if (errorCount>limitErrorCount) {
                     whileLoop = false
+                    errorCount = 0
                     Log.d("HCS_PeriodicDataWorker", "errorCount = $errorCount")
-                    dataDao.insertMessage(MessageDbModel(Date().time,0,2,"Ошибка периодической загрузки данных"))
+
+                    dataDao.insertMessage(
+                        MessageDbModel(
+                            Date().time,
+                            0,
+                            2,
+                            "Ошибка периодической загрузки данных"))
+
                     resultWork = Result.success()
                 }else{
                     resultWork = Result.success()
                 }
-
-
 
             }while (whileLoop)
 
@@ -144,30 +167,30 @@ class PeriodicDataWorker(
             return resultWork
         }
 
-    suspend fun download (input:String,
-                          output:String,
-                          callback:suspend (progress:String)->Unit) {
+    private fun getBatteryPct():Float {
+        val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+            _context.registerReceiver(null, ifilter)
+        }
+        val batteryPct: Float? = batteryStatus?.let { intent ->
+            val level: Int = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale: Int = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            level * 100 / scale.toFloat()
+        }
+        //Log.d("HCS_fromMainViewModel","battery = $batteryPct %")
 
-        val dataFromApiServer = runApiService()
-        dataDao.insertValue(dataFromApiServer)
-        myRef.setValue(dataFromApiServer)
-        Log.d("HCS_PeriodicDataWorker","Write to DB/Firebase from Network")
-        dataDao.insertMessage(MessageDbModel(Date().time,0,0,"Периодическое обновление данных"))
-        callback(dataFromApiServer[0].value.toString())
+        return (batteryPct ?: 0) as Float
     }
 
 
 
-    private suspend fun runApiService():List<DataDbModel>{
 
+
+    private suspend fun runApiService():List<DataDbModel>{
         val jsonContainer = apiService.getData()
         val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
-        Log.d("HCS_PeriodicDataWorker",dataDtoList[0].value.toString())
-
         val dataDbModelList = dataDtoList.map {
             mapper.valueDtoToDbModel(it)
         }
-
         return dataDbModelList
     }
 

@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,7 +35,13 @@ fun MessageScreen(
                 style = MaterialTheme.typography.body1)
         }else{
 
-            MessageList(modifier,messageList.reversed(),deleteMessage )
+            //Log.d("HCS_temp","$messageList")
+
+            if (messageList.size>1){ //одно сообщение остается всегда - START/STOP
+                MessageList(modifier,messageList.reversed(),deleteMessage )
+            }
+
+
         }
     }
 
@@ -56,9 +63,13 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Lon
                     .padding(10.dp)
             ) {
                 items(messageList){container->
-                    if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
-                        if (container.type!=0) ListRow(container,deleteMessage)
+                    if (container.type>0){
+                        if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
+                            if (container.type!=0) ListRow(container,deleteMessage)
+                        }
                     }
+
+
                 }
             }
         }
@@ -175,7 +186,7 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
                         style = MaterialTheme.typography.subtitle2
                     )
                     Text(
-                        text = convertLongToTime(message.time),
+                        text = if (message.time>0) convertLongToTime(message.time) else "",
                         modifier = Modifier.padding(5.dp),
                         style = MaterialTheme.typography.subtitle2
                     )

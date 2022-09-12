@@ -22,5 +22,8 @@ interface ApiService {
     @PUT("data.json")
     suspend fun setMeterElectricity(@Query("\"transmitDate\".meterElectricity")value:String): DataJsonContainerDto
 
+    @PUT("data.json")
+    suspend fun setBatteryPer(@Query("\"transmitDate\".batteryPer")value:Float): DataJsonContainerDto
+
 
 }

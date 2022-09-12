@@ -33,46 +33,26 @@ fun DataListScreen(
     messageList:List<Message>?,
     connectInfo:MutableState<ConnectInfo>,
     onSettingChange: (DataSetting) -> Unit,
-    onControl: (ControlInfo) -> Unit,
-    onLoadData:() -> Unit
+    onControl: (ControlInfo) -> Unit,//запись счетчиков
+    onLoadData:() -> Unit,
 ){
 
 
-    var refreshing by remember { mutableStateOf(false) }
-  if (messageList.isNullOrEmpty()){
-      refreshing = false
-    }else{
-      val time = messageList.last().time
-      var timeRem by remember {mutableStateOf(messageList.last().time)}
+    var refreshing = false
+    if (!messageList.isNullOrEmpty()){
+        val description = messageList.find { it.time == -1L }?.description
+        refreshing = description == "START"
+    //записывам START во ViewModel. Сбразываем в Worker после обновления данных
+    }
 
-      if (refreshing) {
-          //Log.d("HCS_time=","$time")
-          //Log.d("HCS_timeRem=","$timeRem")
-          if (time == timeRem) {
-              refreshing = true
-          } else {
-              refreshing = false
-              timeRem = time//все работает норм
-          }
-
-      }
-
-
-
-  }
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = refreshing),
             onRefresh = {
                 onLoadData()
-                refreshing = true
             }
         ) {
             LazyColumnCreate(modifier,listDataContainer, connectInfo,onSettingChange, onControl)
-
         }
-
-
-
 }
 
 @Composable
@@ -85,6 +65,9 @@ fun LazyColumnCreate(
 )
 
 {
+
+    val lastIndexData = 99
+
     var allList by remember { mutableStateOf(false)}
 
     Column(modifier = modifier,
@@ -96,7 +79,7 @@ fun LazyColumnCreate(
                 items(listDataContainer){ container ->
 
                     if (allList){
-                        if (container.id > 0) DataRow(container,onSettingChange,onControl)
+                        if (container.id in 0..lastIndexData) DataRow(container,onSettingChange,onControl)
                     }else{
                         if (container.setting.visible) DataRow(container,onSettingChange,onControl)
                     }
@@ -255,7 +238,17 @@ private fun MyAlertDialog(data: Data,
                 //openDialog.value = false
             ,
             title = {
-                Text(text = data.description)
+
+                Row(modifier = Modifier
+                    .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = data.description)
+                    Text(text = data.value.toString())
+                    Text(text = data.unit)
+                }
+
+
             },
             text = {
                 Column() {

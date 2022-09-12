@@ -8,7 +8,7 @@ import com.example.homecontrolssystemv01.domain.model.Message
 class PutMessageUseCase (
     private val repository: DataRepository,
 ) {
-    suspend operator fun invoke(listMessage:List<Message>) {
-        repository.putMessageList(listMessage)
+    suspend operator fun invoke(message:Message) {
+        repository.putMessage(message)
     }
 }

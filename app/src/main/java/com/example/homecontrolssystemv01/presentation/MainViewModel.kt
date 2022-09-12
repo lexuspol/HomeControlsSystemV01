@@ -36,7 +36,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val putMessageList = PutMessageUseCase(repository)
 
     private val closeConnect = CloseConnectUseCase(repository)
-    private val getSsidList = GetListSsidUseCase(repository)
     private val getConnectInfo = GetConnectInfoUseCase(repository)
     private val putControl = PutControlUseCase(repository)
     private val putDataSetting = PutSettingUseCase(repository)
@@ -47,6 +46,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private var _connectSetting = ConnectSetting()
 
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
+
 
     private fun createConnectSetting(): ConnectSetting {
         return ConnectSetting(_connectSetting.ssid,_connectSetting.serverMode
@@ -67,16 +67,31 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun loadDataUI(){
         loadData(createConnectSetting())
+        putMessage(
+            Message( -1,  -1,   -1,  "START")
+        )
     }
+
+
+
+
 
     fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
 
-    fun getDataListUI(): LiveData<List<Data>> = getDataList()
+    fun getDataListUI(): LiveData<List<Data>> {
+        return getDataList()
+    }
     fun getMessageListUI(): LiveData<List<Message>> {
 
-        putMessageListUI(listOf())
+        val messageList = getMessageList()
 
-        return getMessageList()
+
+
+       // Log.d("HCS_getMessageListUI","get")
+
+        //putMessageListUI(listOf())//зачем
+
+        return messageList
 
     }
 
@@ -88,11 +103,11 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     }
 
-    fun putMessageListUI(list:List<Message>){
+    private fun putMessage(message:Message){
 
        // Log.d("HCS_putMessageListUI","${list.isEmpty()}")
         viewModelScope.launch {
-            putMessageList(list)
+            putMessageList(message)
         }
     }
 
@@ -112,21 +127,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         loadData(createConnectSetting())
     }
 
-    fun getSsidListForRadioButton():RadioButtonList{
-        val ssidList = mutableListOf(ConnectSetting().ssid)
-        ssidList.addAll(getSsidList())
-        if (ssidList.indexOf(_connectSetting.ssid)==-1) {
-            ssidList.add(_connectSetting.ssid)
-        }
-        return RadioButtonList(
-            //KeySetting.SSID_KEY,
-            ssidList,
-            ssidList.indexOf(_connectSetting.ssid))
-    }
-
-
-   // private val _isLoading: MutableState<Boolean> = mutableStateOf(false)
-    //val isLoading: State<Boolean> get() = _isLoading
 
     private val _selectedTab: MutableState<Int> = mutableStateOf(0)
     val selectedTab: State<Int> get() = _selectedTab
@@ -135,7 +135,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     init {
         readPref()
-        loadData(createConnectSetting())
+        //loadData(createConnectSetting())
     }
     private fun readPref() {
         _connectSetting.ssid = sharedPref.getString(KEY_SSID, ConnectSetting().ssid).toString()
@@ -150,7 +150,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        closeConnect()
+        //closeConnect()
     }
 
     companion object{

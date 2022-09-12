@@ -15,7 +15,6 @@ interface DataRepository {
 
    fun closeConnect()
 
-   fun getSsidList():MutableList<String>
 
    fun putControl(controlInfo: ControlInfo)
 
@@ -25,7 +24,7 @@ interface DataRepository {
    fun getMessageList():LiveData<List<Message>>
 
    suspend fun putDataSetting(dataSetting:DataSetting)
-   suspend fun putMessageList(listMessage:List<Message>)
+   suspend fun putMessage(message:Message)
 
    suspend fun deleteMessage(time:Long)
 
