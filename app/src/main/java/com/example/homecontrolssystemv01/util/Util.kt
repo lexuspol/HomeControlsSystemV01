@@ -1,14 +1,12 @@
 package com.example.homecontrolssystemv01.util
 
 import android.util.Log
-import com.example.homecontrolssystemv01.data.database.DataDbModel
-import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.domain.model.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
 
-fun createDataContainer(listData: List<Data>?, listSetting:List<DataSetting>?):MutableList<DataContainer>{
+fun createDataContainer(listData: List<DataModel>?, listSetting:List<DataSetting>?):MutableList<DataContainer>{
 
     val listContainer = mutableListOf<DataContainer>()
 
@@ -24,7 +22,7 @@ fun createDataContainer(listData: List<Data>?, listSetting:List<DataSetting>?):M
 }
 
 fun giveDataById(listContainer: MutableList<DataContainer>,id:Int):DataContainer{
-    val dataContainer = DataContainer(id,Data(),DataSetting())
+    val dataModelContainer = DataContainer(id,DataModel(),DataSetting())
 
     listContainer.forEach {
         if (it.id == id) {
@@ -32,7 +30,7 @@ fun giveDataById(listContainer: MutableList<DataContainer>,id:Int):DataContainer
         }
     }
 
-    return dataContainer
+    return dataModelContainer
 }
 
 //fun loadingIsComplete(dataList: List<Data>?,connectInfo:ConnectInfo, timeId:Int):Boolean{
@@ -117,7 +115,7 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
 
 }
 
-fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>):List<Message>{
+fun createMessageListLimit(dataModelList: List<DataModel>, settingList: List<DataSetting>):List<Message>{
 
     var time = 0L
 
@@ -125,7 +123,7 @@ fun createMessageListLimit(dataList: List<Data>, settingList: List<DataSetting>)
 
     val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
 
-    dataList.forEach {data->
+    dataModelList.forEach { data->
         if (data.type == 3) {                              //3 - Real type
             if (data.value?.toFloatOrNull() != null){
                 listDataFloat.add(Pair(data.id,data.value.toFloat()))

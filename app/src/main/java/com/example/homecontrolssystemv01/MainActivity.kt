@@ -36,8 +36,12 @@ class MainActivity : ComponentActivity() {
         super.onResume()
 
         viewModel.loadDataUI()
+    }
 
+    override fun onPause() {
+        super.onPause()
 
+        viewModel.resetCycleMode()
 
     }
 }

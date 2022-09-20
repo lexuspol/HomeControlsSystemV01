@@ -5,14 +5,17 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createMessageListLimit
 
 @Composable
 fun MainScreen(viewModel:MainViewModel) {
 
+
     //val dataList = viewModel.getDataListUI().observeAsState().value
     //val settingList = viewModel.getDataSettingUI().observeAsState().value
+    val ssid = viewModel.getDataListUI().observeAsState().value?.find { it.id == DataID.SSID.id }?.value
 
     //viewModel.putMessageListUI(createMessageListLimit(dataList,
         //settingList))
@@ -30,7 +33,7 @@ fun MainScreen(viewModel:MainViewModel) {
                     selectSetting = {navController.navigate(NavScreen.SettingScreen.route)})
             }
             composable(NavScreen.SettingScreen.route) {
-                SettingScreen(connectSetting,connectInfo,
+                SettingScreen(connectSetting,ssid,connectInfo,
                     onValueChange = {viewModel.setDataSetting(it)}
                 ){navController.navigateUp()}
             }

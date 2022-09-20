@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -15,13 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.model.ConnectInfo
 import com.example.homecontrolssystemv01.domain.model.ControlInfo
 import com.example.homecontrolssystemv01.domain.model.DataContainer
 import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
-import com.example.homecontrolssystemv01.util.visible
 
 @Composable
 fun ControlListScreen(
@@ -30,8 +29,7 @@ fun ControlListScreen(
     connectInfo: MutableState<ConnectInfo>,
     onControl: (ControlInfo) -> Unit){
 
-    val localState = connectInfo.value.modeConnect == ModeConnect.LOCAL
-
+    val localState = giveDataById(listDataContainer,DataID.connectMode.id).dataModel.value == ModeConnect.LOCAL.name
     val page = remember { mutableStateOf(1) }
 
         Column(modifier = modifier,
@@ -143,7 +141,7 @@ fun ButtonLight(dataContainer: DataContainer,id:Int,localState:Boolean,onValueCh
     var colorButton = Purple700
     var colorText = Color.White
 
-    if (dataContainer.data.value.toString() == "1") {
+    if (dataContainer.dataModel.value.toString() == "1") {
         colorButton = Color.Yellow
         colorText = Purple700
     }
@@ -156,6 +154,10 @@ fun ButtonLight(dataContainer: DataContainer,id:Int,localState:Boolean,onValueCh
             //блокировка управления
             if (localState){
                 onValueChange(ControlInfo(id))
+
+                //colorButton = if (colorButton == Purple700) Color.Yellow else Purple700
+                //colorText = if(colorText == Color.White) Purple700 else Color.White
+
             }else{
                 showDialog.value = true
             }
@@ -176,7 +178,7 @@ fun ButtonLight(dataContainer: DataContainer,id:Int,localState:Boolean,onValueCh
             tint = colorText
         )
         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text(text = dataContainer.data.description,
+        Text(text = dataContainer.dataModel.description,
             color = colorText,
         style = MaterialTheme.typography.h6
         )

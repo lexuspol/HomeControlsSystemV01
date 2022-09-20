@@ -14,7 +14,6 @@ import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
 import com.example.homecontrolssystemv01.domain.BatteryMonitor
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.useCase.*
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -49,7 +48,10 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
 
     private fun createConnectSetting(): ConnectSetting {
-        return ConnectSetting(_connectSetting.ssid,_connectSetting.serverMode
+        return ConnectSetting(
+            _connectSetting.ssid,
+            _connectSetting.serverMode,
+            _connectSetting.cycleMode
         )
     }
 
@@ -65,6 +67,10 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     }
 
+    fun resetCycleMode(){
+        closeConnect()
+    }
+
     fun loadDataUI(){
         loadData(createConnectSetting())
         putMessage(
@@ -78,7 +84,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
 
-    fun getDataListUI(): LiveData<List<Data>> {
+    fun getDataListUI(): LiveData<List<DataModel>> {
         return getDataList()
     }
     fun getMessageListUI(): LiveData<List<Message>> {
@@ -121,7 +127,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         _connectSetting = connectSetting
         with(sharedPref.edit()) {
             putString(KEY_SSID,_connectSetting.ssid)
-            putBoolean(KEY_MODE,_connectSetting.serverMode)
+            putBoolean(KEY_MODE_PERIODIC,_connectSetting.serverMode)
+            //putBoolean(KEY_MODE_CYCLE,_connectSetting.cycleMode)
             apply()
         }
         loadData(createConnectSetting())
@@ -139,7 +146,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
     private fun readPref() {
         _connectSetting.ssid = sharedPref.getString(KEY_SSID, ConnectSetting().ssid).toString()
-        _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE,false)
+        _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE_PERIODIC,false)
+       // _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE,false)
 
         val auth = Firebase.auth
          if (auth.currentUser ==null) {
@@ -150,12 +158,15 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        //closeConnect()
+        //if (_connectSetting.cycleMode) {
+          //  closeConnect()
+       // }
     }
 
     companion object{
         const val KEY_SSID = "SSID"
-        const val KEY_MODE = "MODE"
+        const val KEY_MODE_PERIODIC = "MODE_PERIODIC"
+        const val KEY_MODE_CYCLE = "MODE_CYCLE"
     }
 
 

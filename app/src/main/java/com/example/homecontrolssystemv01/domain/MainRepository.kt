@@ -7,7 +7,7 @@ import com.example.homecontrolssystemv01.domain.model.*
 
 interface DataRepository {
 
-   fun getDataList (): LiveData<List<Data>>
+   fun getDataList (): LiveData<List<DataModel>>
 
    fun getDataConnect(): MutableState<ConnectInfo>
 

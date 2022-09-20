@@ -63,7 +63,7 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Lon
                     .padding(10.dp)
             ) {
                 items(messageList){container->
-                    if (container.type>0){
+                    if (container.type>=0){
                         if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
                             if (container.type!=0) ListRow(container,deleteMessage)
                         }

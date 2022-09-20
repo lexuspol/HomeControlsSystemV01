@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
@@ -102,12 +102,12 @@ fun LazyColumnCreate(
 
                     ) {
                     Text(
-                        text = "${giveDataById(listDataContainer, -1,).data.value}",
+                        text = "${giveDataById(listDataContainer, DataID.lastTimeUpdate.id,).dataModel.value}",
                         // Modifier.padding(start = 5.dp),
                         style = MaterialTheme.typography.subtitle1
                     )
                     Text(
-                        text = connectInfo.value.modeConnect.name,
+                        text = "${giveDataById(listDataContainer, DataID.connectMode.id,).dataModel.value}",
                         // Modifier.padding(start = 5.dp),
                         style = MaterialTheme.typography.subtitle1
                     )
@@ -138,7 +138,7 @@ fun DataRow(dataContainer: DataContainer,
             onSettingChange: (DataSetting) -> Unit,
             onValueChange: (ControlInfo) -> Unit) {
 
-    val data = dataContainer.data
+    val data = dataContainer.dataModel
     val setting = dataContainer.setting
 
     val showDialog = remember { mutableStateOf(false)}
@@ -205,12 +205,12 @@ fun DataRow(dataContainer: DataContainer,
 
 
 @Composable
-private fun MyAlertDialog(data: Data,
+private fun MyAlertDialog(dataModel: DataModel,
                           setting:DataSetting,
-                  showDialog: Boolean,
-                  onDismiss: () -> Unit,
-                  onSettingChange: (DataSetting) -> Unit,
-                  onValueChange: (ControlInfo) -> Unit
+                          showDialog: Boolean,
+                          onDismiss: () -> Unit,
+                          onSettingChange: (DataSetting) -> Unit,
+                          onValueChange: (ControlInfo) -> Unit
 ){
 
 
@@ -223,7 +223,7 @@ private fun MyAlertDialog(data: Data,
     val errorStateMax = remember { mutableStateOf(false)}
     val errorStateMin = remember { mutableStateOf(false)}
 
-    var textSetCount by remember { mutableStateOf(data.value.toString()) }
+    var textSetCount by remember { mutableStateOf(dataModel.value.toString()) }
     val errorStateSetCount = remember { mutableStateOf(false)}
 
 
@@ -243,9 +243,9 @@ private fun MyAlertDialog(data: Data,
                     .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(text = data.description)
-                    Text(text = data.value.toString())
-                    Text(text = data.unit)
+                    Text(text = dataModel.description)
+                    Text(text = dataModel.value.toString())
+                    Text(text = dataModel.unit)
                 }
 
 
@@ -263,7 +263,7 @@ private fun MyAlertDialog(data: Data,
                         )
                     }
 
-                    if (data.type==3) {
+                    if (dataModel.type==3) {
                         Row() {
                             Switch(checked = checkedStateLimit.value, onCheckedChange = {
                                 checkedStateLimit.value = it
@@ -301,7 +301,7 @@ private fun MyAlertDialog(data: Data,
                             }
                         )
                     }
-                    if (data.type==2) {
+                    if (dataModel.type==2) {
                         Row() {
                             Switch(checked = checkedStateSetCounter.value, onCheckedChange = {
                                 checkedStateSetCounter.value = it
@@ -336,23 +336,23 @@ private fun MyAlertDialog(data: Data,
                     onClick = {
                         onDismiss()
                         onSettingChange(DataSetting(
-                            id = data.id,
-                            description = data.description,
+                            id = dataModel.id,
+                            description = dataModel.description,
                             visible = checkedStateVisible.value,
                             limitMode = checkedStateLimit.value,
                             limitMax = if (!errorStateMax.value) stringLimittoFlout(textLimitMax) else setting.limitMax,
                             limitMin = if (!errorStateMin.value) stringLimittoFlout(textLimitMin) else setting.limitMin,
-                            unit = data.unit
+                            unit = dataModel.unit
                            // setCounter = if(!errorStateSetCount.value&&data.type==2) textSetCount.toLong() else setting.setCounter,
                             //controlMode = if(checkedStateSetCounter.value) data.id else 0
                         ))
 
-                        if (!errorStateSetCount.value&&data.type==2){
+                        if (!errorStateSetCount.value&&dataModel.type==2){
                             onValueChange(
                                 ControlInfo(
-                                id = data.id,
+                                id = dataModel.id,
                                     value = textSetCount,
-                                    type = data.type
+                                    type = dataModel.type
                                 ))
                         }
 

@@ -7,7 +7,7 @@ import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
-import com.example.homecontrolssystemv01.domain.model.Data
+import com.example.homecontrolssystemv01.domain.model.DataModel
 import com.example.homecontrolssystemv01.domain.model.DataSetting
 import com.example.homecontrolssystemv01.domain.model.Message
 import com.google.gson.Gson
@@ -61,7 +61,7 @@ class DataMapper {
         fun mapDataToEntity(dataDb: DataDbModel,
                             listDescription:Array<String>
          //                   setting:List<DataSettingDbModel>
-        ):Data {
+        ):DataModel {
             var description= ""
             var unit= ""
 
@@ -73,7 +73,7 @@ class DataMapper {
                 }
             }
 
-            return Data(
+            return DataModel(
                 id = dataDb.id,
                 value = if(dataDb.name == "lastTimeUpdate") convertDateServerToDateUI(dataDb.value) else dataDb.value,
                 name = dataDb.name,
