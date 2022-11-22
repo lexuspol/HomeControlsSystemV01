@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.convertLongToTime
@@ -24,10 +26,8 @@ import com.example.homecontrolssystemv01.util.convertLongToTime
 fun MessageScreen(
     modifier:Modifier,
     messageList:List<Message>?,
-    deleteMessage: (Long) -> Unit,
+    deleteMessage: (Int) -> Unit,
 ){
-
-
 
         if (messageList.isNullOrEmpty()){
             Text(text = "No message",
@@ -37,8 +37,10 @@ fun MessageScreen(
 
             //Log.d("HCS_temp","$messageList")
 
+           // messageList.sortedBy { it.time }
+           // messageList.reversed()
             if (messageList.size>1){ //одно сообщение остается всегда - START/STOP
-                MessageList(modifier,messageList.reversed(),deleteMessage )
+                MessageList(modifier,messageList.sortedBy { it.time }.reversed(),deleteMessage )
             }
 
 
@@ -46,9 +48,11 @@ fun MessageScreen(
     }
 
 @Composable
-fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Long) -> Unit){
+fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Int) -> Unit){
 
     val checkedStateVisible = remember { mutableStateOf(false) }
+    val completeUpdateTime = messageList.find { it.id == DataID.completeUpdate.id }?.time?:-1L
+
 
     Column(
         modifier = modifier,
@@ -64,8 +68,8 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Lon
             ) {
                 items(messageList){container->
                     if (container.type>=0){
-                        if(checkedStateVisible.value) {ListRow(container,deleteMessage)} else{
-                            if (container.type!=0) ListRow(container,deleteMessage)
+                        if(checkedStateVisible.value) {ListRow(container,completeUpdateTime,deleteMessage)} else{
+                            if (container.type!=MessageType.SYSTEM.int) ListRow(container,completeUpdateTime,deleteMessage)
                         }
                     }
 
@@ -96,39 +100,24 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Lon
                     Switch(checked = checkedStateVisible.value, onCheckedChange = {
                         checkedStateVisible.value = it
                     })
-
-                    Button(onClick = { deleteMessage(0L) },
+                    Button(onClick = { deleteMessage(0) },
                         // Modifier.padding(end = 5.dp),
                         colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
                         Text(text = "Delete all",style = MaterialTheme.typography.subtitle1)
                     }
-
-
-
                 }
 
             }
         }
-
-
-
-
-
         //Spacer(modifier = Modifier.size(20.dp))
-
-
-
     }
-
-
-
     }
 
 
 
 
 @Composable
-fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
+fun ListRow(message: Message, completeUpdateTime:Long, deleteMessage: (Int) -> Unit) {
     Card(
         modifier = Modifier
             .padding(8.dp, 4.dp)
@@ -142,10 +131,8 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
 //                    else -> Color.Gray
 //                }
 //            )
-            .clickable { deleteMessage(message.time) }
-
+            .clickable { deleteMessage(message.id) }
             ,
-
             // .background(Purple500)
  //           .height(50.dp),
         //shape = RoundedCornerShape(8.dp),
@@ -154,20 +141,23 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
         //contentColor = Purple500,
         //backgroundColor = Purple500
     ) {
+
         Surface(
             //           modifier = Modifier.background(Purple500),
-            color = when (message.type) {
-                    0 -> Color.White
-                    1 -> Color.Yellow
-                    2 -> Color.Red
-                    else -> Color.Gray
+            color = if (message.time == completeUpdateTime){
+                when (message.type) {
+                    MessageType.SYSTEM.int -> Color.White
+                    MessageType.WARNING.int -> Color.Yellow
+                    MessageType.ALARM.int-> Color.Red
+                    else -> Color.White
                 }
+            }else{
+                Color.Gray
+            }
+
         ) {
-
             Column(
-
             ) {
-
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -177,9 +167,9 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
                 ) {
                     Text(
                         text = when (message.type) {
-                            0 -> "System message"
-                            1 -> "Warning message"
-                            2 -> "Alarm message"
+                            MessageType.SYSTEM.int -> "System message"
+                            MessageType.WARNING.int -> "Warning message"
+                            MessageType.ALARM.int-> "Alarm message"
                             else -> ""
                         },
                         modifier = Modifier.padding(5.dp),
@@ -191,20 +181,14 @@ fun ListRow(message: Message, deleteMessage: (Long) -> Unit) {
                         style = MaterialTheme.typography.subtitle2
                     )
                 }
-
                 Text(
                     text = message.description,
                     modifier = Modifier.padding(10.dp),
                     style = MaterialTheme.typography.body1
                 )
-
             }//column
-
         }
-
-
     }
-
 }
 
 @Preview(showBackground = true)

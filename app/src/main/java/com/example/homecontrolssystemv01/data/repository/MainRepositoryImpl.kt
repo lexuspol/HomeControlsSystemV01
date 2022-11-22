@@ -1,11 +1,7 @@
 package com.example.homecontrolssystemv01.data.repository
 
 import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -14,24 +10,23 @@ import androidx.lifecycle.Transformations
 import androidx.work.*
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
-import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.workers.PeriodicDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.DataModel
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
+import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
+import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.google.firebase.database.ktx.database
-import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 
 
 class MainRepositoryImpl (private val application: Application): DataRepository {
 
    // private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+    private val infoDevice = "${Build.MODEL} (${Build.ID})"
 
     private val workManager = WorkManager.getInstance(application)
 
@@ -42,6 +37,7 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
   //  private val intentFilter = IntentFilter()
 
     private val listDescription = application.resources.getStringArray(R.array.data)
+    private val dataFormat = application.resources.getString(R.string.data_format)
 
     private var _connectSetting = ConnectSetting()
 
@@ -162,7 +158,7 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
     return Transformations.map(dataDao.getValueList()) { list ->
         list.map {
-            mapper.mapDataToEntity(it, listDescription)
+            mapper.mapDataToEntity(it, listDescription,dataFormat,true)
         }
     }
 }
@@ -181,9 +177,9 @@ override fun getDataList(): LiveData<List<DataModel>> {
     }
 
     //узнать про исключения room
-    override suspend fun deleteMessage(time: Long) {
+    override suspend fun deleteMessage(id:Int) {
 
-        if (time==0L) dataDao.deleteAllMessage() else dataDao.deleteMessage(time)
+        if (id==0) dataDao.deleteAllMessage() else dataDao.deleteMessage(id)
 
 //        dataDao.insertMessage(
 //            MessageDbModel(
@@ -192,6 +188,12 @@ override fun getDataList(): LiveData<List<DataModel>> {
 //                -2,
 //                "Delete data ${convertLongToTime(Date().time)}")
 //        )
+
+    }
+
+    override suspend fun deleteData(id:Int){
+
+        dataDao.deleteData(id)
 
     }
 
@@ -209,7 +211,7 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
         _connectSetting = connectSetting
 
-startRefreshDataWorker(_connectSetting.ssid,0,"0")
+startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode)
 
         if(_connectSetting.serverMode){
             startPeriodicDataWorker(_connectSetting.ssid)
@@ -239,13 +241,16 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0")
     }
 
 
-    private fun startRefreshDataWorker(ssidSetting:String, idControl:Int, valueControl:String){
+    private fun startRefreshDataWorker(ssidSetting:String,
+                                       idControl:Int,
+                                       valueControl:String,
+                                       cycleMode:Boolean){
         try {
 
             workManager.enqueueUniqueWork(
                 RefreshDataWorker.NAME_ONE_TIME,
                 ExistingWorkPolicy.REPLACE,
-                RefreshDataWorker.makeRequestOneTime(ssidSetting,idControl,valueControl))
+                RefreshDataWorker.makeRequestOneTime(ssidSetting,idControl,valueControl,cycleMode,infoDevice))
 
         }catch (e:Exception){
 
@@ -257,7 +262,7 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0")
             workManager.enqueueUniquePeriodicWork(
                 PeriodicDataWorker.NAME_PERIODIC,
                 ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicDataWorker.makeRequestPeriodic(ssidSetting)
+                PeriodicDataWorker.makeRequestPeriodic(ssidSetting,infoDevice)
             )
 
     }
@@ -288,7 +293,10 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0")
 
     override fun putControl(controlInfo: ControlInfo) {
 
-        startRefreshDataWorker(_connectSetting.ssid,controlInfo.id,controlInfo.value)
+        startRefreshDataWorker(_connectSetting.ssid,
+            controlInfo.id,
+            controlInfo.value,
+            _connectSetting.cycleMode)
 
 
 
@@ -303,7 +311,7 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0")
 //        }
     }
 
-    override suspend fun putDataSetting(dataSetting:DataSetting) {
+    override suspend fun putDataSetting(dataSetting: DataSetting) {
 
         try {
             dataDao.insertDataSetting(mapper.settingToDbModel(dataSetting))

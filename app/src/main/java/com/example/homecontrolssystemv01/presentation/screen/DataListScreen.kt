@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,7 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
 import com.example.homecontrolssystemv01.util.stringLimittoFlout
@@ -32,16 +36,20 @@ fun DataListScreen(
     listDataContainer:MutableList<DataContainer>,
     messageList:List<Message>?,
     connectInfo:MutableState<ConnectInfo>,
+    systemSetting: SystemSetting,
     onSettingChange: (DataSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,//запись счетчиков
     onLoadData:() -> Unit,
+    deleteData: (Int) -> Unit
 ){
+
+    val showDetails = systemSetting.showDetails
 
 
     var refreshing = false
     if (!messageList.isNullOrEmpty()){
-        val description = messageList.find { it.time == -1L }?.description
-        refreshing = description == "START"
+        val description = messageList.find { it.id == DataID.completeUpdate.id }?.description
+        refreshing = description == DataID.completeUpdate.name
     //записывам START во ViewModel. Сбразываем в Worker после обновления данных
     }
 
@@ -51,7 +59,8 @@ fun DataListScreen(
                 onLoadData()
             }
         ) {
-            LazyColumnCreate(modifier,listDataContainer, connectInfo,onSettingChange, onControl)
+            LazyColumnCreate(
+                modifier,listDataContainer, connectInfo,showDetails,onSettingChange, onControl,deleteData)
         }
 }
 
@@ -60,13 +69,15 @@ fun LazyColumnCreate(
     modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
     connectInfo:MutableState<ConnectInfo>,
+    showDetails:Boolean,
     onSettingChange: (DataSetting) -> Unit,
-    onControl: (ControlInfo) -> Unit
+    onControl: (ControlInfo) -> Unit,
+deleteData: (Int) -> Unit
 )
 
 {
 
-    val lastIndexData = 99
+    val lastIndexData = 999
 
     var allList by remember { mutableStateOf(false)}
 
@@ -78,13 +89,22 @@ fun LazyColumnCreate(
             LazyColumn {
                 items(listDataContainer){ container ->
 
+
+
                     if (allList){
-                        if (container.id in 0..lastIndexData) DataRow(container,onSettingChange,onControl)
+                        if (showDetails) {
+                            DataRow(container,onSettingChange,onControl,deleteData,true)
+                        }else {
+                            if (container.id in 0..lastIndexData) {
+                                DataRow(container,onSettingChange,onControl,deleteData)
+                            }
+                        }
                     }else{
-                        if (container.setting.visible) DataRow(container,onSettingChange,onControl)
+                        if (container.setting.visible) {
+                            DataRow(container,onSettingChange,onControl,deleteData)
+                        }
+
                     }
-
-
                 }
             }//lazyColumn
         }
@@ -136,7 +156,9 @@ fun LazyColumnCreate(
 @Composable
 fun DataRow(dataContainer: DataContainer,
             onSettingChange: (DataSetting) -> Unit,
-            onValueChange: (ControlInfo) -> Unit) {
+            onValueChange: (ControlInfo) -> Unit,
+            deleteData: (Int) ->Unit,
+            showDetails:Boolean = false){
 
     val data = dataContainer.dataModel
     val setting = dataContainer.setting
@@ -159,7 +181,9 @@ fun DataRow(dataContainer: DataContainer,
                 showDialog = showDialog.value,
                 onDismiss = {showDialog.value = false},
                 onSettingChange,
-            onValueChange)
+            onValueChange,
+                deleteData,
+            showDetails)
             }
 
 
@@ -167,36 +191,58 @@ fun DataRow(dataContainer: DataContainer,
  //           modifier = Modifier.background(Purple500),
             color = Purple700
         ) {
-            Row(
+            
+            Column(
                 Modifier
-                    .fillMaxWidth()
                     .padding(10.dp)
                     .clickable {
                         showDialog.value = true
-                    }
+                    }) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = data.description,
+                        modifier = Modifier.weight(4f),
+                        style = MaterialTheme.typography.subtitle1,
+                        color = if (setting.visible) Color.Yellow else Color.White
+                    )
+                    Text(
+                        text = when(data.type){
+                            DataType.STRING.int -> "  "
+                            DataType.DTL.int -> "  "
+                            else -> data.value.toString()
+                        },
+                        modifier = Modifier.weight(2f),
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.subtitle1,
+                        fontWeight = FontWeight.Bold,
+                        color = if (setting.limitMode) Color.Yellow else Color.White
+                    )
+                    Text(
+                        text = if (data.type!=DataType.BOOL.int) data.unit else "  ",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.subtitle1,
+                        color = if (setting.limitMode) Color.Yellow else Color.White
+                    )
 
-            ) {
-                Text(
-                    text = data.description,
-                    modifier = Modifier.weight(4f),
-                    style = MaterialTheme.typography.subtitle1,
-                    color = if (setting.visible) Color.Yellow else Color.White
-                )
-                Text(
-                    text = data.value.toString(),
-                    modifier = Modifier.weight(2f),
-                    textAlign = TextAlign.End,
-                    style = MaterialTheme.typography.subtitle1,
-                    fontWeight = FontWeight.Bold,
-                    color = if (setting.limitMode) Color.Yellow else Color.White
-                )
-                Text(
-                    text = data.unit,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.subtitle1,
-                    color = if (setting.limitMode) Color.Yellow else Color.White
-                )
+
+                }
+                if (data.type == DataType.STRING.int||data.type == DataType.DTL.int){
+                    Row(){
+                        Text(
+                            text = data.value.toString(),
+                            style = MaterialTheme.typography.subtitle2,
+                        )
+                    }
+                }
+
+
+
             }
+
+
 
         }
     }
@@ -206,11 +252,13 @@ fun DataRow(dataContainer: DataContainer,
 
 @Composable
 private fun MyAlertDialog(dataModel: DataModel,
-                          setting:DataSetting,
+                          setting: DataSetting,
                           showDialog: Boolean,
                           onDismiss: () -> Unit,
                           onSettingChange: (DataSetting) -> Unit,
-                          onValueChange: (ControlInfo) -> Unit
+                          onValueChange: (ControlInfo) -> Unit,
+                          deleteData: (Int) ->Unit,
+                          showDetails: Boolean
 ){
 
 
@@ -226,6 +274,10 @@ private fun MyAlertDialog(dataModel: DataModel,
     var textSetCount by remember { mutableStateOf(dataModel.value.toString()) }
     val errorStateSetCount = remember { mutableStateOf(false)}
 
+    val checkedStateDeleteData = remember {mutableStateOf(false)}
+
+    val checkedStateWarning_0 = remember {mutableStateOf(setting.limitMin==1f)}
+    val checkedStateWarning_1 = remember {mutableStateOf(setting.limitMax==1f)}
 
 
 
@@ -239,19 +291,65 @@ private fun MyAlertDialog(dataModel: DataModel,
             ,
             title = {
 
-                Row(modifier = Modifier
-                    .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(text = dataModel.description)
-                    Text(text = dataModel.value.toString())
-                    Text(text = dataModel.unit)
+                if (dataModel.type == DataType.STRING.int ||
+                    dataModel.type == DataType.DTL.int){
+                    Column() {
+                        Text(text = dataModel.description)
+                        Text(text = dataModel.value.toString())
+                    }
+                }else{
+                    Row(modifier = Modifier
+                        .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = dataModel.description)
+                        Text(text = dataModel.value.toString())
+                        Text(text = if (dataModel.type!=DataType.BOOL.int) dataModel.unit else "  ")
+                    }
                 }
-
 
             },
             text = {
                 Column() {
+
+                    if (showDetails){
+                        Box(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)){
+                            Column(modifier = Modifier
+                                .fillMaxWidth()
+ //                               .padding(10.dp)
+                            ) {
+
+                                Row(
+                                    //Modifier.padding(5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = "ID: ${dataModel.id} ")
+
+                                    Checkbox(
+                                        checked = checkedStateDeleteData.value,
+                                        onCheckedChange = { checkedStateDeleteData.value = it },
+                                        colors  = CheckboxDefaults.colors(
+                                            checkedColor = Color(0xff, 0xb6, 0xc1),
+                                            checkmarkColor = Color.Red)
+                                    )
+                                    Text(text = "Delete Data")
+                                }
+
+                                Text(text = "Name: ${dataModel.name}")
+                                Text(text = "Type: ${dataModel.type}")
+
+
+
+                            }
+                        }
+
+
+                    }
+
+
+
                     Row() {
                         Switch(checked = checkedStateVisible.value, onCheckedChange = {
                             checkedStateVisible.value = it
@@ -263,7 +361,46 @@ private fun MyAlertDialog(dataModel: DataModel,
                         )
                     }
 
-                    if (dataModel.type==3) {
+                    if (dataModel.type==DataType.BOOL.int){
+
+                        Row() {
+                            Switch(checked = checkedStateLimit.value, onCheckedChange = {
+                                checkedStateLimit.value = it
+                            })
+                            Text(
+                                text = "Limit mode",
+                                //style = MaterialTheme.typography.body1.merge(),
+                                //modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Warning")
+                            Checkbox(
+                                checked = checkedStateWarning_1.value,
+                                enabled = checkedStateLimit.value,
+                                onCheckedChange = {
+                                    checkedStateWarning_0.value = false
+                                    checkedStateWarning_1.value = it }
+                            )
+                            Text(text = "=${dataModel.unit.substringBefore('/')}")
+                            Checkbox(
+                                checked = checkedStateWarning_0.value,
+                                enabled = checkedStateLimit.value,
+                                onCheckedChange = {
+                                    checkedStateWarning_1.value = false
+                                    checkedStateWarning_0.value = it }
+                            )
+                            Text(text = "=${dataModel.unit.substringAfter('/')}")
+
+
+                        }
+                    }
+
+
+
+                    if (dataModel.type==DataType.REAL.int) {
                         Row() {
                             Switch(checked = checkedStateLimit.value, onCheckedChange = {
                                 checkedStateLimit.value = it
@@ -301,7 +438,7 @@ private fun MyAlertDialog(dataModel: DataModel,
                             }
                         )
                     }
-                    if (dataModel.type==2) {
+                    if (dataModel.type==DataType.DINT.int) {
                         Row() {
                             Switch(checked = checkedStateSetCounter.value, onCheckedChange = {
                                 checkedStateSetCounter.value = it
@@ -335,25 +472,58 @@ private fun MyAlertDialog(dataModel: DataModel,
                 Button(
                     onClick = {
                         onDismiss()
-                        onSettingChange(DataSetting(
+
+                        var limitMax = setting.limitMax
+
+                        when(dataModel.type){
+                            DataType.REAL.int -> {
+                                if (!errorStateMax.value) limitMax = stringLimittoFlout(textLimitMax)
+                            }
+                            DataType.BOOL.int -> {
+                                limitMax = if (checkedStateWarning_1.value) 1f else 0f
+                            }
+                        }
+
+                        var limitMin = setting.limitMin
+
+                        when(dataModel.type){
+                            DataType.REAL.int -> {
+                                if (!errorStateMin.value) limitMin = stringLimittoFlout(textLimitMin)
+                            }
+                            DataType.BOOL.int -> {
+                                limitMin = if (checkedStateWarning_0.value) 1f else 0f
+                            }
+                        }
+
+
+                        onSettingChange(
+                            DataSetting(
                             id = dataModel.id,
                             description = dataModel.description,
                             visible = checkedStateVisible.value,
                             limitMode = checkedStateLimit.value,
-                            limitMax = if (!errorStateMax.value) stringLimittoFlout(textLimitMax) else setting.limitMax,
-                            limitMin = if (!errorStateMin.value) stringLimittoFlout(textLimitMin) else setting.limitMin,
+                            limitMax = limitMax,
+                            limitMin = limitMin,
                             unit = dataModel.unit
                            // setCounter = if(!errorStateSetCount.value&&data.type==2) textSetCount.toLong() else setting.setCounter,
                             //controlMode = if(checkedStateSetCounter.value) data.id else 0
-                        ))
+                        )
+                        )
 
-                        if (!errorStateSetCount.value&&dataModel.type==2){
+                        if (!errorStateSetCount.value&&dataModel.type==DataType.DINT.int){
                             onValueChange(
                                 ControlInfo(
                                 id = dataModel.id,
                                     value = textSetCount,
                                     type = dataModel.type
                                 ))
+                        }
+
+                        if(checkedStateDeleteData.value) {
+
+                            deleteData(dataModel.id)
+
+                            Log.d("HCS_TEST","delete = $checkedStateDeleteData")
                         }
 
                     }
@@ -387,5 +557,6 @@ private fun MyAlertDialog(dataModel: DataModel,
 @Preview(showBackground = true)
 @Composable
 fun Test(){
-    //DataRow(Data(23,"value","stateDoor",1,"description"))
+
+
 }

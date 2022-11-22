@@ -34,8 +34,14 @@ interface DataDao {
     @Query("DELETE FROM message_list")
     suspend fun deleteAllMessage()
 
-    @Query("DELETE FROM message_list WHERE time=:time")
-    suspend fun deleteMessage(time:Long)
+   // @Query("DELETE FROM message_list WHERE time=:time")
+  //  suspend fun deleteMessage(time:Long)
+
+    @Query("DELETE FROM message_list WHERE id=:id")
+    suspend fun deleteMessage(id:Int)
+
+    @Query("DELETE FROM network_data_list WHERE id=:id")
+    suspend fun deleteData(id:Int)
 
 
 }

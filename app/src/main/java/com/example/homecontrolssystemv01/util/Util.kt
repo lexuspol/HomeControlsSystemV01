@@ -1,7 +1,13 @@
 package com.example.homecontrolssystemv01.util
 
 import android.util.Log
+import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.data.mapper.insertMessage
+import com.example.homecontrolssystemv01.domain.enum.DataType
+import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -22,7 +28,7 @@ fun createDataContainer(listData: List<DataModel>?, listSetting:List<DataSetting
 }
 
 fun giveDataById(listContainer: MutableList<DataContainer>,id:Int):DataContainer{
-    val dataModelContainer = DataContainer(id,DataModel(),DataSetting())
+    val dataModelContainer = DataContainer(id,DataModel(), DataSetting())
 
     listContainer.forEach {
         if (it.id == id) {
@@ -115,24 +121,38 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
 
 }
 
-fun createMessageListLimit(dataModelList: List<DataModel>, settingList: List<DataSetting>):List<Message>{
+fun createMessageListLimit(dataModelList: List<DataModel>,
+                           settingList: List<DataSetting>,
+dataFormat: String):List<Message>{
 
-    var time = 0L
+   // var time = 0L
+
+    val dateTime = dataModelList.find { it.id == DataID.lastTimeUpdate.id }?.value
+    val dateTimeLong = if (!dateTime.isNullOrEmpty()) convertStringTimeToLong(dateTime,dataFormat) else -1L
 
     val listMessage:MutableList<Message> = mutableListOf()
 
     val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
+    val listDataBool:MutableList<Pair<Int,Float>> = mutableListOf()
 
     dataModelList.forEach { data->
-        if (data.type == 3) {                              //3 - Real type
-            if (data.value?.toFloatOrNull() != null){
-                listDataFloat.add(Pair(data.id,data.value.toFloat()))
-            }
+        when(data.type){
+            DataType.REAL.int -> {
+                if (data.value?.toFloatOrNull() != null){
+                    listDataFloat.add(Pair(data.id,data.value.toFloat()))
+            }}
+
+            DataType.BOOL.int ->{
+                if (data.value?.toFloatOrNull() != null){
+                    listDataBool.add(Pair(data.id,data.value.toFloat()))
+                }}
         }
     }
 
     settingList.forEach { setting->
         if (setting.limitMode){
+
+            //Float
             listDataFloat.forEach { pair ->
 
                 if (pair.first == setting.id){
@@ -140,7 +160,8 @@ fun createMessageListLimit(dataModelList: List<DataModel>, settingList: List<Dat
                         (pair.second>setting.limitMax)  -> {
                             listMessage.add(
                                 Message(
-                                    Date().time+time,
+ //                                   Date().time+time,
+                                    dateTimeLong,
                                     setting.id,
                                     type = 1,
                                     "${setting.description}. Выше ${setting.limitMax} ${setting.unit}"))
@@ -150,7 +171,8 @@ fun createMessageListLimit(dataModelList: List<DataModel>, settingList: List<Dat
                         (pair.second<setting.limitMin)  -> {
                             listMessage.add(
                             Message(
-                                Date().time+time,
+ //                               Date().time+time,
+                                dateTimeLong,
                                 setting.id,
                                 type = 1,
                                 "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}"))
@@ -158,10 +180,70 @@ fun createMessageListLimit(dataModelList: List<DataModel>, settingList: List<Dat
                         }
                         }
                     }
-                time += 1
+//                time += 1
                 }
+
+            //Bool
+            listDataBool.forEach { pair ->
+
+                if (pair.first == setting.id){
+
+                    val state = when{
+                        setting.limitMax==1f&&pair.second==1f -> setting.unit.substringBefore('/')
+                        setting.limitMin==1f&&pair.second==0f -> setting.unit.substringAfter('/')
+                        else -> "no"
+                    }
+
+                    if (state!="no"){
+                        listMessage.add(
+                            Message(
+//                                Date().time+time,
+                                dateTimeLong,
+                                setting.id,
+                                type = 1,
+                                description = "${setting.description}. Состояние - $state."
+                            ))
+                    }
+
+
+
+//                    when{
+//                        (setting.limitMax==1f&&pair.second==1f)  -> {
+//                            listMessage.add(
+//                                Message(
+//                                    Date().time+time,
+//                                    setting.id,
+//                                    type = 1,
+//                                    "${setting.description}. Состояние: ${setting.limitMax} ${setting.unit}"))
+//                            //Log.d("HCS_Limit", "${setting.description}. Выше ${setting.limitMax} ${setting.unit}")
+//                        }
+//
+//                        (setting.limitMin==1f&&pair.second==0)  -> {
+//                            listMessage.add(
+//                                Message(
+//                                    Date().time+time,
+//                                    setting.id,
+//                                    type = 1,
+//                                    "${setting.description}. Состояние: ${setting.limitMin} ${setting.unit}"))
+//                            //Log.d("HCS_Limit", "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}")
+//                        }
+//                    }
+                }
+ //               time += 1
+            }
             }
         }
+
+    //message контролируется в UI - SwipeRefreshState
+    //добавление данного сообщения означает окончание обновления
+    listMessage.add(
+        Message(
+            dateTimeLong,
+            DataID.completeUpdate.id,
+            MessageType.SYSTEM.int,
+            description = DataID.completeUpdate.name + " OK"
+        ))
+
     return listMessage
     }
 
@@ -172,13 +254,18 @@ fun convertLongToTime(time: Long): String {
 }
 
 
-
-fun convertStringTimeToLong(time:String):Long{
-
-    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time)?.time?:0
-
-
+fun convertStringTimeToLong(time:String,dataFormat:String):Long{
+    return try {
+        SimpleDateFormat(dataFormat).parse(time)?.time?:-1L
+    }catch (e:NullPointerException){
+        -1L
+    }catch (e:IllegalArgumentException){
+        -1L
+    }catch (e:ParseException){
+        -1L
+    }
 }
+
 
 
 

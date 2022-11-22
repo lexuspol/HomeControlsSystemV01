@@ -2,6 +2,7 @@ package com.example.homecontrolssystemv01.data.workers
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.work.*
@@ -15,6 +16,8 @@ import com.example.homecontrolssystemv01.data.mapper.insertMessage
 import com.example.homecontrolssystemv01.data.mapper.toastMessage
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.domain.enum.DataType
+import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.util.convertStringTimeToLong
 import com.example.homecontrolssystemv01.util.createMessageListLimit
@@ -31,7 +34,10 @@ class RefreshDataWorker(
 ) : CoroutineWorker(context, workerParameters) {
 
     private val listDescription = context.resources.getStringArray(R.array.data)
+    private val dataFormat = context.resources.getString(R.string.data_format)
     private var wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+
 
     private val _context = context
 
@@ -46,23 +52,27 @@ class RefreshDataWorker(
     private val mapper = DataMapper()
 
     private val ssidSetting = workerParameters.inputData.getString(NAME_SETTING_SSID)
+    private val infoDevice = workerParameters.inputData.getString(NAME_INFO_DEVICE)
     private val idControl = workerParameters.inputData.getInt(ID,0)
-    private val valueControl = workerParameters.inputData.getString(VALUE)?:""
+    private val valueControl = workerParameters.inputData.getString(VALUE)?:"0"
+    private val cycleMode = workerParameters.inputData.getBoolean(NAME_CYCLIC_MODE,false)
 
     private val delayTime:Long = 500//milliSeconds
-    private val cyclicTime:Long = 2000//milliSeconds
+    private val cyclicTime:Long = 5000//milliSeconds
     private val limitErrorCount = 2//кол неудачных попыток, после чего результат - ошибка
 
     private val limitTimeRemote = 3600000L // 60 минут - для контроля обновления данных удаленного сервера
 
     override suspend fun doWork(): Result {
 
-
+        val dataSystem = mutableListOf(
+            DataDbModel(DataID.deviceInfo.id,infoDevice,DataID.deviceInfo.name,DataType.STRING.int),
+        )
 
         //чтобы удаленные данные загрузились один раз и после локальных
         //если сразу грузить удаленные данные, то долго ждем загрузку
         var firstCycle = true
-        var loop = false
+        var loop = cycleMode
 
         var dataList = listOf<DataDbModel>()
 
@@ -70,9 +80,7 @@ class RefreshDataWorker(
 
                     val ssid =  wifiManager.connectionInfo.ssid
 
-                    val dataSystem = mutableListOf(
-                        DataDbModel(DataID.SSID.id,ssid,DataID.SSID.name,4),
-                    )
+                    dataSystem.add(DataDbModel(DataID.SSID.id,ssid,DataID.SSID.name,DataType.STRING.int))
 
                     if (ssid == ssidSetting){
 
@@ -82,12 +90,12 @@ class RefreshDataWorker(
                         val dataLocal = getLocalData(firstCycle,idControl,valueControl)
 
                         dataList =  if (dataLocal != null) {
-                            loop = true
+                            //loop = true
                             dataSystem.add(DataDbModel(
                                 DataID.connectMode.id,
                                 ModeConnect.LOCAL.name,
                                 DataID.connectMode.name,
-                                4))
+                                DataType.STRING.int))
                             dataLocal + dataSystem
 
                         } else {
@@ -96,7 +104,7 @@ class RefreshDataWorker(
                                 DataID.connectMode.id,
                                 ModeConnect.STOP.name,
                                 DataID.connectMode.name,
-                                4))
+                                DataType.STRING.int))
                             dataSystem
                         }
 
@@ -114,14 +122,14 @@ class RefreshDataWorker(
                                 DataID.connectMode.id,
                                 ModeConnect.REMOTE.name,
                                 DataID.connectMode.name,
-                                4))
+                                DataType.STRING.int))
                             dataRemote + dataSystem
                         } else {
                             dataSystem.add(DataDbModel(
                                 DataID.connectMode.id,
                                 ModeConnect.STOP.name,
                                 DataID.connectMode.name,
-                                4))
+                                DataType.STRING.int))
                             dataSystem
                         }
 
@@ -172,19 +180,23 @@ class RefreshDataWorker(
 
                     val timeRemoteString = mapper.convertDateServerToDateUI(remoteData.find {
                         it.id == DataID.lastTimeUpdate.id
-                    }?.value)
+                    }?.value,dataFormat)
 
                     Log.d("HCS_RefreshDataWorker", "timeRemote = $timeRemoteString")
 
-                    val timeRemoteLong = convertStringTimeToLong(timeRemoteString)
+                    val timeRemoteLong = convertStringTimeToLong(timeRemoteString,dataFormat)
 
-                    if (Date().time - timeRemoteLong > limitTimeRemote){
+                    if (timeRemoteLong==-1L){
+                        insertMessage(_context,dataDao,1003)
+                    }else{
 
-                        //message
-                        val message = MessageDbModel(Date().time,0,2,"Remote time error")
-                        insertMessage(_context,dataDao,message)
+                        if (Date().time - timeRemoteLong > limitTimeRemote){
+                            insertMessage(_context,dataDao,1004)
+                        }
 
                     }
+
+
 
                     return remoteData
 
@@ -194,9 +206,8 @@ class RefreshDataWorker(
 
         }catch (e:Exception){
 
-            Log.d("HCS_Error Remote data", e.toString())
-            val message = MessageDbModel(Date().time,0,2,"Ошибка удаленных данных")
-                insertMessage(_context,dataDao,message)
+            //Log.d("HCS_Error Remote data", e.toString())
+                insertMessage(_context,dataDao,1002)
 
             return null
         }
@@ -210,26 +221,8 @@ class RefreshDataWorker(
             Log.d ("HCS_Exception", e.message.toString())
             toastMessage(_context,"Error Data Base")
         }
-        completeUpdate()
+
     }
-
-    private suspend fun completeUpdate(){
-        //message контролируется в UI - SwipeRefreshState
-        val message = MessageDbModel(-1,-1,-1,"complete update")
-        insertMessage(_context,dataDao,message)
-    }
-
-//    private suspend fun toastMessage(message:String){
-//
-//        coroutineScope {
-//            launch(Dispatchers.Main){
-//                Toast.makeText(_context, message, Toast.LENGTH_LONG).show()
-//            }
-//        }
-//    }
-
-
-
 
     private suspend fun createMessageAndInsertToBase(dataDbList:List<DataDbModel>) {
 
@@ -238,7 +231,7 @@ class RefreshDataWorker(
             coroutineScope {
 
                 val dataList = dataDbList.map {
-                    mapper.mapDataToEntity(it, listDescription)
+                    mapper.mapDataToEntity(it, listDescription,dataFormat,false)
                 }
 
 
@@ -247,7 +240,7 @@ class RefreshDataWorker(
                 flow.collect() { list ->
                     val listSetting = list.map { mapper.settingDbModelToEntity(it) }
                     // Log.d("HCS_RefreshDataWorker", listSetting.toString())
-                    val listMessage = createMessageListLimit(dataList, listSetting)
+                    val listMessage = createMessageListLimit(dataList, listSetting,dataFormat)
                     val listDbMessage = listMessage.map { mapper.mapEntityToMessage(it) }
                     dataDao.insertMessageList(listDbMessage)
                     //Log.d("HCS_RefreshDataWorker", listDbMessage.toString())
@@ -274,10 +267,20 @@ class RefreshDataWorker(
             val jsonContainer = if (firstCycle){
                 when(idControl){
                     //0-> apiService.getData()
-                    23-> apiService.buttonLightSleep()
-                    24-> apiService.buttonLightChild()
-                    25-> apiService.buttonLightCinema()
-                    37-> apiService.setMeterElectricity(valueControl)
+                    DataID.buttonLightSleep.id-> apiService.buttonLightSleep(valueControl)
+                    DataID.buttonLightChild.id-> apiService.buttonLightChild(valueControl)
+                    DataID.buttonLightCinema.id-> apiService.buttonLightCinema(valueControl)
+                    DataID.buttonLightOutdoor.id -> apiService.buttonLightOutdoor(valueControl)
+
+                    DataID.meterWater.id-> apiService.setMeterWater(valueControl)
+                    DataID.meterElectricity.id-> apiService.setMeterElectricity(valueControl)
+
+                    DataID.buttonWicketUnlock.id-> apiService.buttonWicketUnlock(valueControl)
+                    DataID.buttonGateGarageSBS.id-> apiService.buttonGateGarageSBS(valueControl)
+                    DataID.buttonGateSlidingSBS.id-> apiService.buttonGateSlidingSBS(valueControl)
+
+                    DataID.mainDeviceName.id -> apiService.setMainDeviceName(valueControl)
+
                     else -> {apiService.getData()}
                 }
             }else apiService.getData()
@@ -293,7 +296,7 @@ class RefreshDataWorker(
             if (firstCycle){
                 val timeFromApiServer = mapper.convertDateServerToDateUI(dataDbModelList.find {
                      it.id == DataID.lastTimeUpdate.id
-                 }?.value)
+                 }?.value,dataFormat)
 
                 Log.d("HCS_RefreshDataWorker", "timeLocal = $timeFromApiServer")
             }
@@ -304,9 +307,8 @@ class RefreshDataWorker(
         }catch (e:Exception){
 
             Log.d("HCS_Error Local data", e.toString())
-            val message = MessageDbModel(Date().time,0,2,"Ошибка локальных данных")
 
-            insertMessage(_context,dataDao,message)
+            insertMessage(_context,dataDao,1001)
 
             return null
         }
@@ -324,22 +326,27 @@ class RefreshDataWorker(
         const val NAME_REMOTE_MODE = "Remote_MODE"
         const val NAME_CYCLIC_MODE = "Cyclic_MODE"
         const val NAME_SETTING_SSID = "SSID"
+        const val NAME_INFO_DEVICE = "Info_Device"
 
         const val ID = "id"
         const val VALUE = "value"
 
-        fun makeRequestOneTime(ssid:String, idControl:Int, valueControl:String): OneTimeWorkRequest {
+        fun makeRequestOneTime(ssid:String, idControl:Int,
+                               valueControl:String,cyclicMode:Boolean,infoDevice:String): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(ssid, idControl, valueControl))
+                .setInputData(modeToData(ssid, idControl, valueControl,cyclicMode,infoDevice))
                 .build()
         }
 
-        private fun modeToData(ssid:String, idControl:Int, valueControl:String): Data {
+        private fun modeToData(ssid:String, idControl:Int,
+                               valueControl:String, cyclicMode:Boolean,infoDevice:String): Data {
             return Data.Builder()
                 .putString(NAME_SETTING_SSID,ssid)
                 .putInt(ID,idControl)
                 .putString(VALUE,valueControl)
+                .putBoolean(NAME_CYCLIC_MODE,cyclicMode)
+                .putString(NAME_INFO_DEVICE,infoDevice)
                 .build()
         }
 

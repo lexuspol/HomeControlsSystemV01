@@ -2,15 +2,19 @@ package com.example.homecontrolssystemv01.data.mapper
 
 
 
+import android.util.Log
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
+import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.DataModel
-import com.example.homecontrolssystemv01.domain.model.DataSetting
+import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.Message
 import com.google.gson.Gson
+import java.text.SimpleDateFormat
 
 
 class DataMapper {
@@ -46,7 +50,7 @@ class DataMapper {
 
     )
 
-    fun settingToDbModel(dataSetting:DataSetting) = DataSettingDbModel(
+    fun settingToDbModel(dataSetting: DataSetting) = DataSettingDbModel(
         id = dataSetting.id,
         description = dataSetting.description,
         visible= dataSetting.visible,
@@ -59,23 +63,46 @@ class DataMapper {
 
 
         fun mapDataToEntity(dataDb: DataDbModel,
-                            listDescription:Array<String>
-         //                   setting:List<DataSettingDbModel>
+                            listDescription:Array<String>,
+                            dataFormat:String,
+                            converBool:Boolean
+         //                   setting:List<DataSettingDbModel>,
+
         ):DataModel {
-            var description= ""
+            var description= dataDb.name.toString()
             var unit= ""
+            var valueBoolFor_1 = "1"
+            var valueBoolFor_0 = "0"
 
 
             listDescription.forEach { item ->
                 if (item.substringBefore('|')==dataDb.id.toString()) {
                     description = item.substringAfter('|').substringBefore('^')
                     unit = item.substringAfter('^')
+                    valueBoolFor_1 = unit.substringBefore('/')
+                    valueBoolFor_0 = unit.substringAfter('/')
                 }
             }
 
             return DataModel(
                 id = dataDb.id,
-                value = if(dataDb.name == "lastTimeUpdate") convertDateServerToDateUI(dataDb.value) else dataDb.value,
+                //value = if(dataDb.name == "lastTimeUpdate") convertDateServerToDateUI(dataDb.value) else dataDb.value,
+                value = when(dataDb.type){
+
+                    DataType.BOOL.int ->{
+                        if (converBool){
+                            when(dataDb.value){
+                                "1"->valueBoolFor_1
+                                "0"->valueBoolFor_0
+                                else -> dataDb.value
+                            }
+                        }else dataDb.value
+                    }
+
+                    DataType.DTL.int->convertDateServerToDateUI(dataDb.value,dataFormat)
+                    DataType.TIME.int->convertTimeServerToTimeUI(dataDb.value)
+                    else -> dataDb.value
+                },
                 name = dataDb.name,
                 type = dataDb.type,
                 description = description,
@@ -85,14 +112,59 @@ class DataMapper {
 
         }
 
+    fun convertDateServerToDateUI(date:String?,dataFormat: String):String{
 
+        var dateReturn = "error time"
 
+        if (date == null) return dateReturn
 
+        //DTL#2022-11-20-11:22:45.209672
 
+        val indexDateFirst = date.indexOf("#")
+        val indexDataLast = date.lastIndexOf(".")
+        val indexDataBetween = date.lastIndexOf("-")
 
-    fun convertDateServerToDateUI(date:String?):String{
-        if (date == null) return "not time"
-        return "${date.substring(4,14)} ${date.substring(15,23)}"
+        if (indexDateFirst==3&&indexDataBetween>indexDateFirst&&indexDataLast>indexDataBetween){
+            dateReturn = date.substring(indexDateFirst+1,indexDataBetween) + " " +
+                         date.substring(indexDataBetween+1,indexDataLast)
+        }
+
+        return dateReturn
+    }
+
+    fun convertTimeServerToTimeUI(time:String?):String{
+        if (time == null) return "00:00"
+
+        //T#2H_5M_8S_815MS
+        //T#0MS
+        val indexTimeFirst = time.indexOf("#")
+        val index_H = time.indexOf("h")
+        val index_M = time.indexOf("m")
+        val index_S = time.indexOf("s")
+
+        when{
+            indexTimeFirst!=1||(index_S-index_M)<3 -> return "00:00"
+            index_H>2&&index_M>5&&index_S>8 -> {
+                return "${time.substring(indexTimeFirst+1,index_H)}h " +
+                        "${time.substring(index_H+2,index_M)}m " +
+                        "${time.substring(index_M+2,index_S)}s"
+            }
+            index_H>2&&index_S>5 -> {
+                return "${time.substring(indexTimeFirst+1,index_H)}h " +
+                        "${time.substring(index_H+2,index_S)}s"
+            }
+            index_M>2&&index_S>5 -> {
+                return "${time.substring(indexTimeFirst+1,index_M)}m " +
+                        "${time.substring(index_M+2,index_S)}s"
+            }
+            index_S>2 -> {
+               return "${time.substring(indexTimeFirst+1,index_S)}s"
+            }
+
+            else ->return "00:00"
+
+        }
+
     }
 
     fun mapMessageToEntity(message: MessageDbModel):Message {

@@ -10,13 +10,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
 import com.example.homecontrolssystemv01.domain.BatteryMonitor
+import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
+import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 import com.example.homecontrolssystemv01.domain.useCase.*
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import java.util.*
 
 
 class MainViewModel(application: Application): AndroidViewModel(application) {
@@ -32,6 +38,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val getMessageList = GetMessageListUseCase(repository)
 
     private val deleteMessage = DeleteMessageUseCase(repository)
+    private val deleteData = DeleteDataUseCase(repository)
     private val putMessageList = PutMessageUseCase(repository)
 
     private val closeConnect = CloseConnectUseCase(repository)
@@ -43,6 +50,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val getBatteryInfo = BatteryMonitor(aplic)
 
     private var _connectSetting = ConnectSetting()
+    private var _systemSetting = SystemSetting()
 
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
 
@@ -59,7 +67,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         putControl(controlInfo)
     }
 
-    fun putDataSettingUI(dataSetting:DataSetting){
+    fun putDataSettingUI(dataSetting: DataSetting){
 
         viewModelScope.launch {
             putDataSetting(dataSetting)
@@ -74,7 +82,10 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     fun loadDataUI(){
         loadData(createConnectSetting())
         putMessage(
-            Message( -1,  -1,   -1,  "START")
+            Message(Date().time,
+                DataID.completeUpdate.id,
+                MessageType.SYSTEM.int,
+                DataID.completeUpdate.name)
         )
     }
 
@@ -101,13 +112,22 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     }
 
-    fun deleteMessageUI(time:Long){
+    fun deleteMessageUI(id:Int){
 
         viewModelScope.launch {
-            deleteMessage(time)
+            deleteMessage(id)
         }
 
     }
+
+    fun deleteDataUI(id:Int){
+
+        viewModelScope.launch {
+            deleteData(id)
+        }
+
+    }
+
 
     private fun putMessage(message:Message){
 
@@ -119,19 +139,29 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun getConnectSettingUI(): ConnectSetting = _connectSetting
 
+    fun getSystemSettingUI(): SystemSetting = _systemSetting
+
     fun getConnectInfoUI():MutableState<ConnectInfo> = getConnectInfo()
 
     fun getBatteryInfoUI():String = getBatteryInfo.getBatteryPct().toString()
 
-    fun setDataSetting(connectSetting: ConnectSetting){
+    fun setConnectSetting(connectSetting: ConnectSetting){
         _connectSetting = connectSetting
         with(sharedPref.edit()) {
             putString(KEY_SSID,_connectSetting.ssid)
             putBoolean(KEY_MODE_PERIODIC,_connectSetting.serverMode)
-            //putBoolean(KEY_MODE_CYCLE,_connectSetting.cycleMode)
+            putBoolean(KEY_MODE_CYCLE,_connectSetting.cycleMode)
             apply()
         }
         loadData(createConnectSetting())
+    }
+
+    fun setSystemSetting(systemSetting: SystemSetting){
+        _systemSetting = systemSetting
+        with(sharedPref.edit()) {
+            putBoolean(KEY_SHOW_DETAILS,_systemSetting.showDetails)
+            apply()
+        }
     }
 
 
@@ -147,7 +177,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private fun readPref() {
         _connectSetting.ssid = sharedPref.getString(KEY_SSID, ConnectSetting().ssid).toString()
         _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE_PERIODIC,false)
-       // _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE,false)
+        _systemSetting.showDetails = sharedPref.getBoolean(KEY_SHOW_DETAILS,false)
+        _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE,false)
 
         val auth = Firebase.auth
          if (auth.currentUser ==null) {
@@ -167,6 +198,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         const val KEY_SSID = "SSID"
         const val KEY_MODE_PERIODIC = "MODE_PERIODIC"
         const val KEY_MODE_CYCLE = "MODE_CYCLE"
+        const val KEY_SHOW_DETAILS = "SHOW_DETAILS"
     }
 
 

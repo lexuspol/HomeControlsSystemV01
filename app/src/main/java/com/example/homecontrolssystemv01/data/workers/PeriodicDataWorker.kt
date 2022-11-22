@@ -5,8 +5,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
+import android.os.Build
 import android.util.Log
 import androidx.work.*
+import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
@@ -35,7 +37,8 @@ class PeriodicDataWorker(
         MainRepositoryImpl.FIREBASE_PATH
     )
 
-    private val ssidSetting = workerParameters.inputData.getString(RefreshDataWorker.NAME_SETTING_SSID)
+    private val ssidSetting = workerParameters.inputData.getString(NAME_SETTING_SSID)
+    private val infoDevice = workerParameters.inputData.getString(NAME_INFO_DEVICE)
 
 //    private val notificationManager =
 //        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -90,22 +93,22 @@ class PeriodicDataWorker(
                             mapper.valueDtoToDbModel(it)
                         }
                         myRef.setValue(dataDbModelList)
-                        apiService.setBatteryPer(getBatteryPct())
 
-                        dataDao.insertMessage(
-                            MessageDbModel(
-                                Date().time,
-                                0,
-                                0,
-                                "Периодическое обновление данных"))
+                        val mainDeviceName = dataDbModelList.find { it.id == DataID.mainDeviceName.id }?.value
+
+                        if (mainDeviceName == infoDevice){
+                            apiService.setBatteryPer(getBatteryPct())
+                        }
+
+                        insertMessage(_context,dataDao,1007)
+
                     }
 
                     //setForeground(createForegroundInfo("Download"))
 
                 } catch (e: Exception) {
                     Log.d("HCS_PeriodicDataWorker", e.toString())
-                    val message = MessageDbModel(Date().time,0,2,"Periodic mode error")
-                    insertMessage(_context,dataDao,message)
+                    insertMessage(_context,dataDao,1006)
                 }
 
             return Result.success()
@@ -128,19 +131,21 @@ class PeriodicDataWorker(
 
         const val NAME_PERIODIC = "RefreshDataWorker_PERIODIC"
         private const val NAME_SETTING_SSID = "SSID"
+        const val NAME_INFO_DEVICE = "Info_Device"
 
-        fun makeRequestPeriodic(ssidSetting:String): PeriodicWorkRequest {
+        fun makeRequestPeriodic(ssidSetting:String,infoDevice:String): PeriodicWorkRequest {
             return PeriodicWorkRequestBuilder<PeriodicDataWorker>(20,
                 TimeUnit.MINUTES)
                 .setConstraints(makeConstraints())
                 //.setExpedited(OutOfQuotaPolicy.DROP_WORK_REQUEST)
-                .setInputData(modeToData(ssidSetting))
+                .setInputData(modeToData(ssidSetting,infoDevice))
                 .build()
         }
 
-        private fun modeToData(ssidSetting:String): Data {
+        private fun modeToData(ssidSetting:String,infoDevice:String): Data {
             return Data.Builder()
                 .putString(NAME_SETTING_SSID,ssidSetting)
+                .putString(NAME_INFO_DEVICE,infoDevice)
                 .build()
         }
 

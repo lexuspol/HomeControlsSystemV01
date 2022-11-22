@@ -47,6 +47,7 @@ fun DataScreen(viewModel: MainViewModel,
     //Log.d("HCS",messageListSystem.toString())
 
     val connectInfo = viewModel.getConnectInfoUI()
+    val systemSetting = viewModel.getSystemSettingUI()
 
     val selectedTab = DataScreenTab.getTabFromResource(viewModel.selectedTab.value)
     val tabs = DataScreenTab.values()
@@ -103,9 +104,11 @@ fun DataScreen(viewModel: MainViewModel,
                         dataContainerList,
                         messageListSystem,
                         connectInfo,
+                        systemSetting,
                         onSettingChange = {viewModel.putDataSettingUI(it)},
                     onControl = {viewModel.putControlUI(it)},
                         onLoadData = {viewModel.loadDataUI()},
+                        deleteData = {viewModel.deleteDataUI(it)}
                     )
 
                     DataScreenTab.MESSAGE -> MessageScreen(

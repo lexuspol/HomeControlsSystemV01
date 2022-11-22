@@ -7,15 +7,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.presentation.MainViewModel
-import com.example.homecontrolssystemv01.util.createMessageListLimit
 
 @Composable
 fun MainScreen(viewModel:MainViewModel) {
 
-
-    //val dataList = viewModel.getDataListUI().observeAsState().value
+    val dataList = viewModel.getDataListUI().observeAsState().value
     //val settingList = viewModel.getDataSettingUI().observeAsState().value
-    val ssid = viewModel.getDataListUI().observeAsState().value?.find { it.id == DataID.SSID.id }?.value
+    //val ssid = viewModel.getDataListUI().observeAsState().value?.find { it.id == DataID.SSID.id }?.value
+
+    //val ssid = dataList?.find { it.id == DataID.SSID.id }?.value
+    //val mainDeviceName = dataList?.find { it.id == DataID.mainDeviceName.id }
 
     //viewModel.putMessageListUI(createMessageListLimit(dataList,
         //settingList))
@@ -24,6 +25,7 @@ fun MainScreen(viewModel:MainViewModel) {
     //val listSsid = viewModel.getSsidListForRadioButton()
     //val prefSsid
     val connectSetting = viewModel.getConnectSettingUI()
+    val systemSetting = viewModel.getSystemSettingUI()
 
     val navController = rememberNavController()
 
@@ -33,8 +35,10 @@ fun MainScreen(viewModel:MainViewModel) {
                     selectSetting = {navController.navigate(NavScreen.SettingScreen.route)})
             }
             composable(NavScreen.SettingScreen.route) {
-                SettingScreen(connectSetting,ssid,connectInfo,
-                    onValueChange = {viewModel.setDataSetting(it)}
+                SettingScreen(connectSetting,systemSetting,dataList,connectInfo,
+                    setConnectSetting = {viewModel.setConnectSetting(it)},
+                    setSystemSetting = {viewModel.setSystemSetting(it)},
+                    onControl = {viewModel.putControlUI(it)}
                 ){navController.navigateUp()}
             }
         }
