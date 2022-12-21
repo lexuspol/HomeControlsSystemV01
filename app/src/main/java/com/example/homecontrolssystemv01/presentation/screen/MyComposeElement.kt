@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.homecontrolssystemv01.ui.theme.Purple500
+import com.example.homecontrolssystemv01.ui.theme.PrimaryLight
 
 @Composable
 fun CustomLinearProgressBar(){
@@ -38,7 +39,7 @@ fun CardSettingElement(content: @Composable () -> Unit){
             .padding(10.dp)
         ,
         shape = RoundedCornerShape(8.dp),
-        backgroundColor = Purple500,
+        //backgroundColor = MaterialTheme.colors.primary,
         //contentColor = Color.Red,//цвет текста
         //elevation = 4.dp,//возвышение
         border = BorderStroke(1.dp, Color.White),

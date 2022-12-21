@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
-import com.example.homecontrolssystemv01.ui.theme.Purple700
+//import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.convertLongToTime
 
 @Composable
@@ -100,9 +101,11 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Int
                     Switch(checked = checkedStateVisible.value, onCheckedChange = {
                         checkedStateVisible.value = it
                     })
-                    Button(onClick = { deleteMessage(0) },
+                    Button(onClick = { deleteMessage(0) }
                         // Modifier.padding(end = 5.dp),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)) {
+                       // colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
+                    )
+                    {
                         Text(text = "Delete all",style = MaterialTheme.typography.subtitle1)
                     }
                 }
@@ -118,6 +121,18 @@ fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Int
 
 @Composable
 fun ListRow(message: Message, completeUpdateTime:Long, deleteMessage: (Int) -> Unit) {
+
+    val colorMes =
+        when {
+            (message.time == completeUpdateTime)&&
+                    (message.type == MessageType.SYSTEM.int) -> Color.White
+            (message.time == completeUpdateTime)&&
+                    (message.type == MessageType.WARNING.int) -> Color.Yellow
+            message.type == MessageType.ALARM.int-> Color.Red
+            else -> Color.Gray
+        }
+
+
     Card(
         modifier = Modifier
             .padding(8.dp, 4.dp)
@@ -137,6 +152,7 @@ fun ListRow(message: Message, completeUpdateTime:Long, deleteMessage: (Int) -> U
  //           .height(50.dp),
         //shape = RoundedCornerShape(8.dp),
         elevation = 4.dp,
+        border = BorderStroke(3.dp, colorMes)
 
         //contentColor = Purple500,
         //backgroundColor = Purple500
@@ -144,26 +160,28 @@ fun ListRow(message: Message, completeUpdateTime:Long, deleteMessage: (Int) -> U
 
         Surface(
             //           modifier = Modifier.background(Purple500),
-            color = if (message.time == completeUpdateTime){
-                when (message.type) {
-                    MessageType.SYSTEM.int -> Color.White
-                    MessageType.WARNING.int -> Color.Yellow
-                    MessageType.ALARM.int-> Color.Red
-                    else -> Color.White
-                }
-            }else{
-                Color.Gray
-            }
-
+//            color =
+//                when {
+//                    (message.time == completeUpdateTime)&&
+//                            (message.type == MessageType.SYSTEM.int) -> Color.White
+//                    (message.time == completeUpdateTime)&&
+//                            (message.type == MessageType.WARNING.int) -> Color.Yellow
+//                    message.type == MessageType.ALARM.int-> Color.Red
+//                    else -> Color.Gray
+//                },
+            //contentColor = Color.Black
         ) {
             Column(
+              //  contentColorFor(backgroundColor = )
             ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
+
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+
                 ) {
                     Text(
                         text = when (message.type) {
@@ -173,18 +191,21 @@ fun ListRow(message: Message, completeUpdateTime:Long, deleteMessage: (Int) -> U
                             else -> ""
                         },
                         modifier = Modifier.padding(5.dp),
-                        style = MaterialTheme.typography.subtitle2
+                        style = MaterialTheme.typography.subtitle2,
+                   // color = colorMes
                     )
                     Text(
                         text = if (message.time>0) convertLongToTime(message.time) else "",
                         modifier = Modifier.padding(5.dp),
-                        style = MaterialTheme.typography.subtitle2
+                        style = MaterialTheme.typography.subtitle2,
+                   //     color = Color.Black
                     )
                 }
                 Text(
                     text = message.description,
                     modifier = Modifier.padding(10.dp),
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.body1,
+               //     color = Color.Black
                 )
             }//column
         }

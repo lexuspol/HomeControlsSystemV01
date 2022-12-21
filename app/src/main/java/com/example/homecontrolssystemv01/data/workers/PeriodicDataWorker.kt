@@ -12,9 +12,9 @@ import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
-import com.example.homecontrolssystemv01.data.mapper.insertMessage
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.util.insertMessage
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import java.util.*

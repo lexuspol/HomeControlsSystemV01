@@ -1,11 +1,13 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -24,7 +26,8 @@ import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
-import com.example.homecontrolssystemv01.ui.theme.Purple700
+import com.example.homecontrolssystemv01.util.convertIntToBinaryString
+
 import com.example.homecontrolssystemv01.util.giveDataById
 import com.example.homecontrolssystemv01.util.stringLimittoFlout
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -35,7 +38,6 @@ fun DataListScreen(
     modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
     messageList:List<Message>?,
-    connectInfo:MutableState<ConnectInfo>,
     systemSetting: SystemSetting,
     onSettingChange: (DataSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,//запись счетчиков
@@ -60,7 +62,7 @@ fun DataListScreen(
             }
         ) {
             LazyColumnCreate(
-                modifier,listDataContainer, connectInfo,showDetails,onSettingChange, onControl,deleteData)
+                modifier,listDataContainer,showDetails,onSettingChange, onControl,deleteData)
         }
 }
 
@@ -68,7 +70,6 @@ fun DataListScreen(
 fun LazyColumnCreate(
     modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
-    connectInfo:MutableState<ConnectInfo>,
     showDetails:Boolean,
     onSettingChange: (DataSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,
@@ -134,7 +135,7 @@ deleteData: (Int) -> Unit
                     Button(
                         onClick = { allList = !allList },
                         // Modifier.padding(end = 5.dp),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
+                      //  colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
                     ) {
                         Text(text = "All list", style = MaterialTheme.typography.subtitle1)
                     }
@@ -164,6 +165,9 @@ fun DataRow(dataContainer: DataContainer,
     val setting = dataContainer.setting
 
     val showDialog = remember { mutableStateOf(false)}
+
+    val colorBorder = if (setting.visible || setting.limitMode) Color.Yellow else MaterialTheme.colors.background
+
     Card(
         modifier = Modifier
             .padding(8.dp, 4.dp)
@@ -171,6 +175,7 @@ fun DataRow(dataContainer: DataContainer,
             // .background(Purple500)
    //         .height(50.dp),
         shape = RoundedCornerShape(8.dp), elevation = 4.dp,
+        border = BorderStroke(1.dp, colorBorder)
 
         //contentColor = Purple500,
         //backgroundColor = Purple500
@@ -189,7 +194,7 @@ fun DataRow(dataContainer: DataContainer,
 
         Surface(
  //           modifier = Modifier.background(Purple500),
-            color = Purple700
+         //   color = Purple700
         ) {
             
             Column(
@@ -206,30 +211,33 @@ fun DataRow(dataContainer: DataContainer,
                         text = data.description,
                         modifier = Modifier.weight(4f),
                         style = MaterialTheme.typography.subtitle1,
-                        color = if (setting.visible) Color.Yellow else Color.White
+                        //color = if (setting.visible) Color.Yellow else Color.White
                     )
                     Text(
                         text = when(data.type){
                             DataType.STRING.int -> "  "
                             DataType.DTL.int -> "  "
+                            DataType.WORD.int -> "  "
                             else -> data.value.toString()
                         },
                         modifier = Modifier.weight(2f),
                         textAlign = TextAlign.End,
                         style = MaterialTheme.typography.subtitle1,
                         fontWeight = FontWeight.Bold,
-                        color = if (setting.limitMode) Color.Yellow else Color.White
+                       // color = if (setting.limitMode) Color.Yellow else Color.White
                     )
                     Text(
                         text = if (data.type!=DataType.BOOL.int) data.unit else "  ",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.subtitle1,
-                        color = if (setting.limitMode) Color.Yellow else Color.White
+                       // color = if (setting.limitMode) Color.Yellow else Color.White
                     )
 
 
                 }
-                if (data.type == DataType.STRING.int||data.type == DataType.DTL.int){
+                if (data.type == DataType.STRING.int||
+                    data.type == DataType.DTL.int||
+                    data.type == DataType.WORD.int)  {
                     Row(){
                         Text(
                             text = data.value.toString(),
@@ -261,6 +269,7 @@ private fun MyAlertDialog(dataModel: DataModel,
                           showDetails: Boolean
 ){
 
+    val len = 16//количество bit в сообщении
 
     val checkedStateVisible = remember { mutableStateOf(setting.visible)}
     val checkedStateLimit = remember { mutableStateOf(setting.limitMode)}
@@ -279,6 +288,8 @@ private fun MyAlertDialog(dataModel: DataModel,
     val checkedStateWarning_0 = remember {mutableStateOf(setting.limitMin==1f)}
     val checkedStateWarning_1 = remember {mutableStateOf(setting.limitMax==1f)}
 
+    val switchRem = remember { mutableStateOf(convertIntToBinaryString(setting.limitMax.toInt(),len))}
+
 
 
         if(showDialog){
@@ -292,7 +303,8 @@ private fun MyAlertDialog(dataModel: DataModel,
             title = {
 
                 if (dataModel.type == DataType.STRING.int ||
-                    dataModel.type == DataType.DTL.int){
+                    dataModel.type == DataType.DTL.int||
+                    dataModel.type == DataType.WORD.int ){
                     Column() {
                         Text(text = dataModel.description)
                         Text(text = dataModel.value.toString())
@@ -466,6 +478,49 @@ private fun MyAlertDialog(dataModel: DataModel,
 
                     }
 
+                    if (dataModel.type==DataType.WORD.int && dataModel.listString.isNotEmpty()){
+
+                        val listMessageDescription = dataModel.listString
+                        val lastIndex = listMessageDescription.size-1
+                        //последнее сообщение - это общее системное сообщение
+
+
+                       // val switch = setting.limitMax.toInt()
+                       // val switchBin = convertIntToBinaryString(switch,16)
+                        
+                        LazyColumn{
+                            itemsIndexed(dataModel.listString.subList(0,lastIndex)){index, string ->
+                                Row(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth()
+//                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+
+                                    Text(
+                                        text = string,
+                                        //style = MaterialTheme.typography.body1.merge(),
+                                        //modifier = Modifier.padding(start = 16.dp)
+                                    )
+
+                                        Switch(checked = if(switchRem.value.isNotEmpty()) switchRem.value[index] == '1' else false,
+                                            onCheckedChange = {booleon->
+                                                val char = if(booleon) '1' else '0'
+                                                val sb = StringBuilder(switchRem.value).also { it.setCharAt(index, char) }
+                                                switchRem.value = sb.toString()
+                                            },
+                                        enabled = switchRem.value.isNotEmpty()
+                                            )
+
+                                }
+                            }
+                        }
+
+
+
+                    }
+
                 }
             },
             confirmButton = {
@@ -481,6 +536,9 @@ private fun MyAlertDialog(dataModel: DataModel,
                             }
                             DataType.BOOL.int -> {
                                 limitMax = if (checkedStateWarning_1.value) 1f else 0f
+                            }
+                            DataType.WORD.int ->{
+                                limitMax = switchRem.value.toInt(2).toFloat()// сделать проверку
                             }
                         }
 

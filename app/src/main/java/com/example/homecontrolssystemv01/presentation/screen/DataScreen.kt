@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -9,25 +8,18 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.example.homecontrolssystemv01.ui.theme.Purple200
 import com.example.homecontrolssystemv01.R
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.example.homecontrolssystemv01.domain.model.Message
-import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.util.createDataContainer
-import com.example.homecontrolssystemv01.util.createMessageListLimit
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 
 
 @Composable
@@ -46,7 +38,6 @@ fun DataScreen(viewModel: MainViewModel,
     val messageListSystem = viewModel.getMessageListUI().observeAsState().value
     //Log.d("HCS",messageListSystem.toString())
 
-    val connectInfo = viewModel.getConnectInfoUI()
     val systemSetting = viewModel.getSystemSettingUI()
 
     val selectedTab = DataScreenTab.getTabFromResource(viewModel.selectedTab.value)
@@ -58,7 +49,7 @@ fun DataScreen(viewModel: MainViewModel,
             topBar = {DataAppBar(selectSetting)},
             bottomBar = {
                 BottomNavigation(
-                    backgroundColor = Purple200,
+                    //backgroundColor = Mate,
 
                 ) {
                     tabs.forEach { tab ->
@@ -77,12 +68,6 @@ fun DataScreen(viewModel: MainViewModel,
                             }
 
                         }
-
-
-
-
-
-
                         BottomNavigationItem(
                             icon = { Icon(imageVector = tab.icon, contentDescription = null) },
                             label = { Text(text = stringResource(tab.title), color = Color.White) },
@@ -103,7 +88,6 @@ fun DataScreen(viewModel: MainViewModel,
                         modifier = modifier,
                         dataContainerList,
                         messageListSystem,
-                        connectInfo,
                         systemSetting,
                         onSettingChange = {viewModel.putDataSettingUI(it)},
                     onControl = {viewModel.putControlUI(it)},
@@ -122,7 +106,6 @@ fun DataScreen(viewModel: MainViewModel,
                     DataScreenTab.CONTROL -> ControlListScreen(
                         modifier = modifier,
                         dataContainerList,
-                        connectInfo,
                         onControl = {viewModel.putControlUI(it)}
                     )
                 }
@@ -140,7 +123,7 @@ fun DataScreen(viewModel: MainViewModel,
 private fun DataAppBar(selectSetting: () -> Unit = {}) {
     TopAppBar(
         elevation = 4.dp,
-        backgroundColor = Purple200,
+       // backgroundColor = PrimaryDark,
         ){
                 Text(
             modifier = Modifier

@@ -63,7 +63,7 @@ class DataMapper {
 
 
         fun mapDataToEntity(dataDb: DataDbModel,
-                            listDescription:Array<String>,
+                            listResourses:List<Array<String>>,
                             dataFormat:String,
                             converBool:Boolean
          //                   setting:List<DataSettingDbModel>,
@@ -73,6 +73,9 @@ class DataMapper {
             var unit= ""
             var valueBoolFor_1 = "1"
             var valueBoolFor_0 = "0"
+
+            val  listDescription = listResourses[0]
+            val  listAlarm = listResourses[1]
 
 
             listDescription.forEach { item ->
@@ -101,16 +104,31 @@ class DataMapper {
 
                     DataType.DTL.int->convertDateServerToDateUI(dataDb.value,dataFormat)
                     DataType.TIME.int->convertTimeServerToTimeUI(dataDb.value)
+                    DataType.WORD.int->convertWordToByte(dataDb.value,16)
                     else -> dataDb.value
                 },
                 name = dataDb.name,
                 type = dataDb.type,
                 description = description,
-                unit = unit
-
-            )
+                unit = unit,
+                listString = when(dataDb.id){
+                    DataID.alarmMessage.id -> listAlarm.toList()
+                    else -> listOf()
+                }
+    )
 
         }
+
+    private fun convertWordToByte(data: String?, len:Int): String? {
+
+        return try {
+            val int = data?.toInt()?:0
+            String.format("%" + len + "s", int.toString(2)).replace(" ".toRegex(), "0")
+        }catch (e:NumberFormatException){
+            null
+        }
+
+    }
 
     fun convertDateServerToDateUI(date:String?,dataFormat: String):String{
 

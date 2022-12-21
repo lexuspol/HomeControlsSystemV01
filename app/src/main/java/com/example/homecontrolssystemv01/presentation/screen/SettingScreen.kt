@@ -21,47 +21,56 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
-import com.example.homecontrolssystemv01.domain.model.DataModel
-import com.example.homecontrolssystemv01.domain.model.ConnectInfo
-import com.example.homecontrolssystemv01.domain.model.ControlInfo
+import com.example.homecontrolssystemv01.domain.enum.ControlValue
+import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
-import com.example.homecontrolssystemv01.ui.theme.Purple200
-import com.example.homecontrolssystemv01.ui.theme.Purple700
+
 
 @Composable
 fun SettingScreen(
     connectSetting: ConnectSetting,
     systemSetting: SystemSetting,
     dataList:List<DataModel>?,
-    connectInfo:MutableState<ConnectInfo>,
     setConnectSetting: (ConnectSetting) -> Unit,
     setSystemSetting: (SystemSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,
     pressOnBack: () -> Unit = {}
 ){
 
+
     var ssid = ""
+    var connectMode = ""
     var mainDeviceName = ""
     var infoDevice = ""
 
+    var stateSoundOff = ""
+    var stateSoundOffUnit = ""
+
     if (!dataList.isNullOrEmpty()){
+
 
         dataList.forEach { dataModel->
 
             when(dataModel.id){
                 DataID.SSID.id -> ssid = dataModel.value.toString()
+                DataID.connectMode.id -> connectMode = dataModel.value.toString()
                 DataID.mainDeviceName.id -> {
                     mainDeviceName = dataModel.value.toString()
                 }
                 DataID.deviceInfo.id -> infoDevice = dataModel.value.toString()
+                DataID.stateSoundOff.id -> {
+                    stateSoundOff = dataModel.value.toString()
+                    stateSoundOffUnit = dataModel.unit
+                }
 
             }
 
         }
-
     }
+
+    var enableControl = connectMode==ModeConnect.LOCAL.name
 
 
     Scaffold (
@@ -98,17 +107,13 @@ fun SettingScreen(
                         )
                         Button(
                             onClick = {
-                                setConnectSetting(
-                                    ConnectSetting(
-                                        connectInfo.value.ssidConnect,
-                                        connectSetting.serverMode
-                                    )
-                                )
+                                connectSetting.ssid = ssid
+                                setConnectSetting(connectSetting)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(5.dp),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Purple700),
+                           // colors = ButtonDefaults.buttonColors(backgroundColor = Purple700),
 
                             ) {
                             Text(
@@ -143,17 +148,13 @@ fun SettingScreen(
                         Button(
                             onClick = {
                                 onControl(ControlInfo(DataID.mainDeviceName.id,infoDevice))
-//                            setConnectSetting(
-//                                ConnectSetting(
-//                                    connectInfo.value.ssidConnect,
-//                                    connectSetting.serverMode
-//                                )
-//                            )
+                 //               enableControl = false
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(5.dp),
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Purple700),
+                            enabled = enableControl,
+                           // colors = ButtonDefaults.buttonColors(backgroundColor = Purple700),
 
                             ) {
                             Text(
@@ -252,6 +253,38 @@ fun SettingScreen(
                         }
                     }
                 }
+
+                CardSettingElement {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+
+                        val stateOff = stateSoundOff == stateSoundOffUnit.substringBefore('/')
+
+
+
+                        Text(text = "Отключить звуковое оповещение",
+                            Modifier.weight(4f),
+                            style = MaterialTheme.typography.body1)
+
+                        Switch(
+                            checked = stateOff ,
+                            onCheckedChange = {
+                                    onControl(ControlInfo(DataID.buttonSoundOff.id,
+                                        if (stateOff) ControlValue.SOUND_ON.value else ControlValue.SOUND_OFF.value))
+                            //    enableControl = false
+
+                            },
+                            Modifier.weight(1f),
+                            enabled = enableControl
+                        )
+                    }
+
+                }
             }
 
 
@@ -337,7 +370,7 @@ fun AppBarSetting(pressOnBack: () -> Unit = {}){
 
     TopAppBar(
         elevation = 4.dp,
-        backgroundColor = Purple200,
+        //backgroundColor = Purple200,
         title = {Text(stringResource(R.string.setting))},
         navigationIcon = {
             IconButton(onClick = {pressOnBack()}) {

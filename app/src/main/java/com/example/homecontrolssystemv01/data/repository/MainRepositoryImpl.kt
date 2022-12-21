@@ -18,147 +18,63 @@ import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.DataModel
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 
 
 class MainRepositoryImpl (private val application: Application): DataRepository {
-
-   // private var wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
     private val infoDevice = "${Build.MODEL} (${Build.ID})"
 
     private val workManager = WorkManager.getInstance(application)
 
     private val dataDao = AppDatabase.getInstance(application).dataDao()
-   // private val dataSettingDao = AppDatabase.getInstance(application).dataSetting()
 
     private  val mapper = DataMapper()
-  //  private val intentFilter = IntentFilter()
 
     private val listDescription = application.resources.getStringArray(R.array.data)
+    private val alarmMessage = application.resources.getStringArray(R.array.alarmMessage)
+    private val listResourses = listOf(listDescription,alarmMessage)
     private val dataFormat = application.resources.getString(R.string.data_format)
 
     private var _connectSetting = ConnectSetting()
 
-    //
     var _connectInfo:MutableState<ConnectInfo> = mutableStateOf(ConnectInfo())
 
-    //запускаем бродкаст, он следит за состоянием сети, если сеть изменилась, то вызывается метод
-//    private val wifiScanReceiver = object : BroadcastReceiver() {
-//
-//        override fun onReceive(context: Context, intent: Intent) {
-//            val ssidFromWiFi = wifiManager.connectionInfo.ssid  // метод устарел, но другой очень муторный
-//            if (_connectInfo.value.ssidConnect != ssidFromWiFi) {
-//                selectDataSource(ssidFromWiFi)
-//            }
-//        }
-//    }
-
-    private val myRef = Firebase.database(FIREBASE_URL).getReference(FIREBASE_PATH)
+    private val myRef = Firebase.database(FIREBASE_URL)//.getReference(FIREBASE_PATH)
+    private var addRemoteListener = false
 
     //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
     //запускаем слушателя в loadData
-//    private val valueEventListener: ValueEventListener = object : ValueEventListener {
-//        override fun onDataChange(snapshot: DataSnapshot) {
-//
-//            val dataFirebase = snapshot.getValue<List<DataDbModel>>()
-//
-//            if (dataFirebase != null) {
-//               // Log.d("HCS_FIREBASE", dataFirebase[0].value.toString())
-//
-//                startLocal(true)
-//
-//
-//            } else {
-//                Log.d("HCS_FIREBASE_ERROR", "Data = null")
-//            }
-//        }
-//
-//        override fun onCancelled(error: DatabaseError) {
-//            // Failed to read value
-//            Log.w("HCS_FIREBASE_ERROR", "Failed to read value.", error.toException())
-//        }
-//    }
+    private val valueEventListener: ValueEventListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
 
+            val dataFirebaseID = snapshot.child("id").getValue<Int>()?:0
+            val dataFirebaseValue = snapshot.child("value").getValue<String>()?:"0"
 
-    //////////////////////////////////
+                if (dataFirebaseID != 0){
+                   Log.d("HCS_FIREBASE", "statr worker value = $dataFirebaseValue")
+                    putControl(ControlInfo(dataFirebaseID,dataFirebaseValue,0,true))
+                    removeValueControlRemote()
+                }
+        }
 
-
-
-
-
-//    val request: NetworkRequest = NetworkRequest.Builder()
-//        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-//        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-//        .build()
-//
-//    val connectivityManager: ConnectivityManager =
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            application.getSystemService(ConnectivityManager::class.java)
-//        } else {
-//            TODO("VERSION.SDK_INT < M")
-//        }
-//
-//    val networkCallback = object : ConnectivityManager.NetworkCallback() {
-//
-//        override fun onAvailable(network: Network) {
-//            super.onAvailable(network)
-//        }
-//
-//        override fun onCapabilitiesChanged(
-//            network: Network,
-//            networkCapabilities: NetworkCapabilities
-//        ) {
-//            val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//
-//                if (networkCapabilities.transportInfo != null) {
-//                    networkCapabilities.transportInfo as WifiInfo
-//                }else{
-//                    Log.d("HCS_connectivity","wifiInfo = null")
-//                    null
-//                }
-//
-//            } else {
-//                TODO("VERSION.SDK_INT < Q")
-//            }
-//
-//            val ssid = wifiInfo?.ssid
-//
-//            if (ssid != null) {
-//
-//                if (_connectInfo.value.ssidConnect == wifiInfo.ssid){                                    //!!!!
-//                    Log.d("HCS_BroadcastReceiver","${wifiInfo.ssid} double")
-//                } else{
-//                    //startLoad(ssidFromWiFi)
-//                    selectDataSource(wifiInfo.ssid)
-//                }
-//
-//
-//            }else{
-//                Log.d("HCS_connectivity","ssid = null")
-//            }
-//
-//
-//
-//
-//        }
-//    }
-
-
-
-
-
-    /////////////////////////////////////////////////
-
-
+        override fun onCancelled(error: DatabaseError) {
+            // Failed to read value
+            Log.w("HCS_FIREBASE_ERROR", "Failed to read value.", error.toException())
+        }
+    }
 
 
 override fun getDataList(): LiveData<List<DataModel>> {
 
     return Transformations.map(dataDao.getValueList()) { list ->
         list.map {
-            mapper.mapDataToEntity(it, listDescription,dataFormat,true)
+            mapper.mapDataToEntity(it, listResourses,dataFormat,true)
         }
     }
 }
@@ -178,17 +94,7 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
     //узнать про исключения room
     override suspend fun deleteMessage(id:Int) {
-
         if (id==0) dataDao.deleteAllMessage() else dataDao.deleteMessage(id)
-
-//        dataDao.insertMessage(
-//            MessageDbModel(
-//                -2,
-//                -2,
-//                -2,
-//                "Delete data ${convertLongToTime(Date().time)}")
-//        )
-
     }
 
     override suspend fun deleteData(id:Int){
@@ -211,46 +117,42 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
         _connectSetting = connectSetting
 
-startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode)
+        startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode,false)
 
         if(_connectSetting.serverMode){
             startPeriodicDataWorker(_connectSetting.ssid)
-        }else workManager.cancelUniqueWork(PeriodicDataWorker.NAME_PERIODIC)
 
+            if (addRemoteListener){
 
+                //удаляем так как может весеть команда
+                removeValueControlRemote()
 
+                myRef.getReference(FIREBASE_PATH_CONTROL).addValueEventListener(valueEventListener)
+                Log.d("HCS","addListener")
 
-      //  _connectSetting = connectSetting
-        //selectDataSource(wifiManager.connectionInfo.ssid)
+                addRemoteListener = false
+            }
 
-//        if (connectSetting.cycleMode){
-//            _connectInfo.value.ssidConnect = ""//обнуляем сеть
-//            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-//            application.registerReceiver(wifiScanReceiver, intentFilter)
-//        }else{
-//            selectDataSource(wifiManager.connectionInfo.ssid)
-//            closeConnect()
-//        }
+        }else {
+            workManager.cancelUniqueWork(PeriodicDataWorker.NAME_PERIODIC)
+            myRef.getReference(FIREBASE_PATH_CONTROL).removeEventListener(valueEventListener)
+        }
 
-        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-       //     startConnectivity()
-     //   }else{
-     //       intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-      //      application.registerReceiver(wifiScanReceiver, intentFilter)
-     //   }
     }
 
 
     private fun startRefreshDataWorker(ssidSetting:String,
                                        idControl:Int,
                                        valueControl:String,
-                                       cycleMode:Boolean){
+                                       cycleMode:Boolean,
+                                       remoteControl:Boolean){
         try {
 
             workManager.enqueueUniqueWork(
                 RefreshDataWorker.NAME_ONE_TIME,
                 ExistingWorkPolicy.REPLACE,
-                RefreshDataWorker.makeRequestOneTime(ssidSetting,idControl,valueControl,cycleMode,infoDevice))
+                RefreshDataWorker.makeRequestOneTime(ssidSetting,
+                    idControl,valueControl,cycleMode,infoDevice,remoteControl))
 
         }catch (e:Exception){
 
@@ -264,31 +166,10 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode)
                 ExistingPeriodicWorkPolicy.KEEP,
                 PeriodicDataWorker.makeRequestPeriodic(ssidSetting,infoDevice)
             )
-
     }
 
-//    fun startConnectivity(){
-//
-//
-//
-//        //connectivityManager.requestNetwork(request, networkCallback); // For request
-//        connectivityManager.registerNetworkCallback(request, networkCallback); // For listen
-//        Log.w("HCS_connectivity", "registerNetworkCallback" )
-//
-//    }
-
     override fun closeConnect() {
-
         workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-
-//        try {
-//            if (_connectSetting.cycleMode) workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-//            application.unregisterReceiver(wifiScanReceiver)
-//            Log.d("HCS_closeConnect","unregisterReceiver")
-//        }catch (e:Exception){
-//            Log.d("HCS_closeConnect",e.message.toString())
-//        }
-
     }
 
     override fun putControl(controlInfo: ControlInfo) {
@@ -296,19 +177,9 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode)
         startRefreshDataWorker(_connectSetting.ssid,
             controlInfo.id,
             controlInfo.value,
-            _connectSetting.cycleMode)
-
-
-
-//        if (_connectInfo.value.modeConnect == ModeConnect.LOCAL){
-//
-//            workManager.enqueueUniqueWork(
-//                ControlDataWorker.NAME_WORKER_CONTROL,
-//                ExistingWorkPolicy.REPLACE,
-//                ControlDataWorker.makeRequestOneTime(controlInfo))
-//        }else{
-//            Log.d("HCS_MainRepositoryImpl","CONTROL - NOT, MODE - ${_connectInfo.value.modeConnect}")
-//        }
+            _connectSetting.cycleMode,
+            controlInfo.remoteControl
+        )
     }
 
     override suspend fun putDataSetting(dataSetting: DataSetting) {
@@ -321,121 +192,19 @@ startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode)
 
     }
 
+    private fun removeValueControlRemote(){
+        myRef.getReference(FIREBASE_PATH_CONTROL).setValue(ControlRemote())
+           }
 
-//    private fun selectDataSource(ssidFromReceiver:String){
-//        if (ssidFromReceiver == _connectSetting.ssid){
-//            _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.LOCAL)
-//            startLocal(false)
-//        }else{
-//            _connectInfo.value = ConnectInfo(ssidFromReceiver,ModeConnect.REMOTE)
-//            startLocal(true)
-//        }
-//    }
-
-
-
-//    private fun startLoad(ssidFromWiFi:String){
-//
-//        //val ssidFromParameters = "\"${_connectSetting.ssid}\""
-//        val ssidFromParameters = _connectSetting.ssid
-//
-//        val connectInfo = ConnectInfo(ssidFromWiFi)
-//
-//         when{
-//                (ssidFromWiFi == ssidFromParameters)&&_connectSetting.serverMode -> {
-//                    connectInfo.modeConnect = ModeConnect.SERVER
-//                }
-//                (ssidFromWiFi == ssidFromParameters)&&!_connectSetting.serverMode -> {
-//                    connectInfo.modeConnect = ModeConnect.LOCAL
-////                    val status = workManager.getWorkInfosByTag(RefreshDataWorker.NAME_PERIODIC).get()
-////                    if (status.isEmpty()) {
-////                        Log.d("HCS_BroadcastReceiver","state work = pusto")
-////                    }else{
-////                        status[0].state.name
-////                        Log.d("HCS_BroadcastReceiver","state work = ${status.toString()}")
-////                    }
-//                }
-//                (ssidFromWiFi != ssidFromParameters)&&!_connectSetting.serverMode -> {
-//                    connectInfo.modeConnect = ModeConnect.REMOTE
-//                }
-//                else -> connectInfo.modeConnect = ModeConnect.STOP
-//            }
-//
-//        Log.d("HCS_BroadcastReceiver", "ssid = ${connectInfo.ssidConnect}, mode - ${connectInfo.modeConnect.name}")
-//
-//        _connectInfo.value = connectInfo
-//        //createWorker()
-//    }
-
-
-
-//    private fun createWorker(){
-//
-//        myRef.removeEventListener(valueEventListener)
-//
-//        when (_connectInfo.value.modeConnect) {
-//            ModeConnect.SERVER -> {
-//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-//
-//                workManager.enqueueUniquePeriodicWork(
-//                    RefreshDataWorker.NAME_PERIODIC,
-//                    ExistingPeriodicWorkPolicy.KEEP,
-//                    RefreshDataWorker.makeRequestPeriodic(_connectSetting.serverMode,false)
-//                )
-//                //Log.d("HCS_WorkManager","Mode.SERVER - loadDataPeriodic")
-//
-//            }
-//            ModeConnect.LOCAL -> {
-//
-//                startLocal(false)
-//                //Log.d("HCS_WorkManager","Mode.LOCAL - loadDataOneTime")
-//
-//            }
-//            ModeConnect.REMOTE -> {
-//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-//                myRef.addValueEventListener(valueEventListener)
-//                //Log.d("HCS_WorkManager","Mode.REMOTE - loadDataOneTime")
-//
-//            }
-//            ModeConnect.STOP -> {
-//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_ONE_TIME)
-//                workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-//                //Log.d("HCS_WorkManager","Mode.STOP")
-//            }
-//        }
-//
-//
-//    }
-
-//    private fun startLocal(remoteMode:Boolean){
-//
-//        if (_connectSetting.serverMode && !remoteMode){
-//            workManager.enqueueUniquePeriodicWork(
-//                PeriodicDataWorker.NAME_PERIODIC,
-//                ExistingPeriodicWorkPolicy.KEEP,
-//                PeriodicDataWorker.makeRequestPeriodic()
-//            )
-//        }else{
-//            workManager.cancelUniqueWork(PeriodicDataWorker.NAME_PERIODIC)
-//        }
-//
-//           // workManager.cancelUniqueWork(RefreshDataWorker.NAME_PERIODIC)
-//            workManager.enqueueUniqueWork(
-//                RefreshDataWorker.NAME_ONE_TIME,
-//                ExistingWorkPolicy.REPLACE,
-//                RefreshDataWorker.makeRequestOneTime(_connectSetting.cycleMode,remoteMode,_connectSetting.ssid)
-//            )
-//
-//    }
-
-
+    init {
+        addRemoteListener = true// разобраться нужно ли это делать тут или сразу объявить в поле
+    }
 
     companion object{
         const val FIREBASE_URL =
             "https://homesystemcontrolv01-default-rtdb.asia-southeast1.firebasedatabase.app"
         const val FIREBASE_PATH = "data"
+        const val FIREBASE_PATH_CONTROL = "controlRemove"
     }
-
 
 }

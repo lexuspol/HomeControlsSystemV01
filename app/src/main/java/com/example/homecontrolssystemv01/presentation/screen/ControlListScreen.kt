@@ -1,15 +1,17 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
+import android.util.Log
+import androidx.compose.animation.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,14 +19,13 @@ import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.model.*
-import com.example.homecontrolssystemv01.ui.theme.Purple700
+//import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
 
 @Composable
 fun ControlListScreen(
     modifier:Modifier,
     listDataContainer:MutableList<DataContainer>,
-    connectInfo: MutableState<ConnectInfo>,
     onControl: (ControlInfo) -> Unit){
 
     val localState = giveDataById(listDataContainer,DataID.connectMode.id).dataModel.value == ModeConnect.LOCAL.name
@@ -65,7 +66,7 @@ fun ControlListScreen(
                     Button(
                         onClick = {page.value = page.value-1},
                         enabled = page.value>1,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
+                      //  colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
 
                     ) {
                         Icon(
@@ -80,7 +81,7 @@ fun ControlListScreen(
                     Button(
                         onClick = {page.value = page.value+1},
                         enabled = page.value<2,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
+                      //  colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
 
                     ) {
                         Icon(
@@ -103,7 +104,6 @@ fun PageBox1(listDataContainer:MutableList<DataContainer>, localState:Boolean,
 
     Column() {
 
-       // ButtonLight(lightLivingOn, id = 22, localState,onControl)
         ButtonLight(giveDataById(listDataContainer,DataID.lightSleepState.id),
             giveDataById(listDataContainer,DataID.buttonLightSleep.id),
             localState,onControl)
@@ -131,16 +131,15 @@ fun PageBox2(listDataContainer:MutableList<DataContainer>, localState:Boolean,
 
         ButtonGate(giveDataById(listDataContainer,DataID.wicketUnlock.id),
             giveDataById(listDataContainer,DataID.buttonWicketUnlock.id),
-            localState,onControl,false)
+            localState,true, onControl,false)
 
         ButtonGate(giveDataById(listDataContainer,DataID.garageGateOpen.id),
             giveDataById(listDataContainer,DataID.buttonGateGarageSBS.id),
-            localState,onControl)
+            localState,false, onControl)
 
         ButtonGate(giveDataById(listDataContainer,DataID.slidingGateOpen.id),
             giveDataById(listDataContainer,DataID.buttonGateSlidingSBS.id),
-            localState,onControl)
-
+            localState,false, onControl)
     }
 
 }
@@ -148,58 +147,88 @@ fun PageBox2(listDataContainer:MutableList<DataContainer>, localState:Boolean,
 @Composable
 fun ButtonLight(dataState: DataContainer,dataControl: DataContainer,localState:Boolean,onValueChange: (ControlInfo) -> Unit){
 
-    var colorButton = Purple700
-    var colorText = Color.White
-    val enableButton = remember { mutableStateOf(true)}
 
-    if (dataState.dataModel.value.toString() == dataState.dataModel.unit.substringBefore('/') ){
-        colorButton = Color.Yellow
-        colorText = Purple700
-        enableButton.value = true
+    val colorOn = Color.Yellow
+    val colorOff = MaterialTheme.colors.primary
+    var colorText = MaterialTheme.colors.primary
+
+    var colorButton = MaterialTheme.colors.background
+
+   val enableButton = remember { mutableStateOf(true)}
+
+    val int = when(dataState.dataModel.value.toString()){
+        dataState.dataModel.unit.substringBefore('/') -> 1 //on
+        dataState.dataModel.unit.substringAfter('/') -> 2 //off
+        else -> 0}
+
+    val stateLightInt =
+       remember { mutableStateOf(int  )}
+
+    if (int == stateLightInt.value){
+        if (int == 1)  colorText = colorOn
+        if (int == 2)  colorText = colorOff
     }
+
+
 
     val showDialog = remember { mutableStateOf(false)}
     AlertDialogLocalState (showDialog.value,onDismiss =  {showDialog.value = false})
+
+    //Log.d ("HCS", "rem int = ${stateLightInt.value}  int = $int")
 
     Button(
         onClick = {
             //блокировка управления
             if (localState){
+
                 onValueChange(ControlInfo(dataControl.id,ControlValue.ON.value))
-                enableButton.value = false
+
+                when (int) {
+                    1 -> {
+                        stateLightInt.value = 2
+                        colorText = colorOff
+                    }
+                    2 -> {
+                        stateLightInt.value = 1
+                        colorText = colorOn
+                    }
+                }
+
+                //enableButton.value = false
             }else{
                 showDialog.value = true
             }
                   },
-        enabled = enableButton.value,
+     //   enabled = enableButton.value,
         modifier = Modifier
             .fillMaxWidth()
             .padding(5.dp),
         colors = ButtonDefaults.buttonColors(backgroundColor = colorButton)
 
     ) {
-        Icon(
-            Icons.Filled.Done,
-            contentDescription = null,
-            modifier = Modifier.size(ButtonDefaults.IconSize),
-            tint = colorText
-        )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+//        Icon(
+//            Icons.Filled.Star,
+//            contentDescription = null,
+//            modifier = Modifier.size(ButtonDefaults.IconSize),
+//           tint = colorText
+//        )
+//        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
         Text(text = dataControl.dataModel.description,
-            color = colorText,
+         color = colorText,
         style = MaterialTheme.typography.h6
         )
     }
 }
 
 @Composable
-fun ButtonGate(dataState: DataContainer,dataControl: DataContainer,
+fun ButtonGate(dataState: DataContainer, dataControl: DataContainer,
                localState:Boolean,
+               permitRemoteControl: Boolean,
                onValueChange: (ControlInfo) -> Unit,
                showCheck:Boolean = true){
 
-    var colorButton = Purple700
-    var colorText = Color.White
+    var colorButton = MaterialTheme.colors.background
+    var colorText = MaterialTheme.colors.primary
     val enableButton = remember { mutableStateOf(true)}
 
 //    if (dataState.dataModel.value.toString()==ControlValue.ON.value){
@@ -209,7 +238,7 @@ fun ButtonGate(dataState: DataContainer,dataControl: DataContainer,
 
     if (dataControl.dataModel.value.toString() == ControlValue.GATE_CHECK.value){
         colorButton = Color.Green//если есть команда, то зеленый
-        colorText = Purple700
+        //colorText = MaterialTheme.colors.background
         enableButton.value = true
     }
 
@@ -224,7 +253,7 @@ fun ButtonGate(dataState: DataContainer,dataControl: DataContainer,
     Button(
         onClick = {
             //блокировка управления
-                if (localState){
+                if (localState || permitRemoteControl){
                     onValueChange(ControlInfo(dataControl.id,ControlValue.GATE_START.value))
                     enableButton.value = false
 
@@ -263,12 +292,42 @@ fun AlertDialogGateState(dataControl: DataContainer,
                          showDialog: Boolean,
                          onDismiss: () -> Unit,
                          onValueChange: (ControlInfo) -> Unit)
-                         {
+ {
+
+     val checkState = dataControl.dataModel.value==ControlValue.GATE_CHECK.value
+     //var isAnimated by remember { mutableStateOf(checkState)}
+     //val colorAnim = remember { Animatable(Color.DarkGray) }
+     //LaunchedEffect(isAnimated) {
+       //  colorAnim.animateTo(if (isAnimated) Color.Green else Color.Red, animationSpec = tween(2000))
+    // }
 
     if (showDialog){
         AlertDialog(onDismissRequest = onDismiss,
             title = {Text(dataControl.dataModel.description)},
-            text = {Text("Управление в режиме Step-By-Step") },
+            text = {
+                Column() {
+                    Text("Управление в режиме Step-By-Step")
+//                    Text(
+//                        when(){
+//                            checkState -> "Управление разрешено"
+//
+//
+//                        }
+//                    )
+//
+//                    if (checkState) Text("Управление разрешено") else{
+//                        Text("Проверка возможности управления")
+//                    }
+                }
+//                Box(Modifier
+//                    .fillMaxWidth()
+//                    .background(colorAnim.value)) {
+//
+//
+//                }
+
+
+            },
             buttons = {
 
                 Row(modifier = Modifier
@@ -281,7 +340,7 @@ fun AlertDialogGateState(dataControl: DataContainer,
                             onValueChange(ControlInfo(dataControl.id,ControlValue.GATE_RUN.value))
                                   onDismiss()},
 
-                    enabled = dataControl.dataModel.value==ControlValue.GATE_CHECK.value) {
+                    enabled = checkState) {
                         Text("Машина")
                     }
 
@@ -289,7 +348,7 @@ fun AlertDialogGateState(dataControl: DataContainer,
                         onClick = {
                             onValueChange(ControlInfo(dataControl.id,ControlValue.GATE_PART_OPEN.value))
                             onDismiss()},
-                        enabled = dataControl.dataModel.value==ControlValue.GATE_CHECK.value) {
+                        enabled = checkState) {
                         Text("Пешеход")
                     }
                 }

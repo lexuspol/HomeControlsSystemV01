@@ -42,12 +42,9 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val putMessageList = PutMessageUseCase(repository)
 
     private val closeConnect = CloseConnectUseCase(repository)
-    private val getConnectInfo = GetConnectInfoUseCase(repository)
     private val putControl = PutControlUseCase(repository)
     private val putDataSetting = PutSettingUseCase(repository)
     private val getDataSetting = GetSettingListUseCase(repository)
-
-    private val getBatteryInfo = BatteryMonitor(aplic)
 
     private var _connectSetting = ConnectSetting()
     private var _systemSetting = SystemSetting()
@@ -59,7 +56,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         return ConnectSetting(
             _connectSetting.ssid,
             _connectSetting.serverMode,
-            _connectSetting.cycleMode
+            _connectSetting.cycleMode,
+
         )
     }
 
@@ -141,10 +139,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun getSystemSettingUI(): SystemSetting = _systemSetting
 
-    fun getConnectInfoUI():MutableState<ConnectInfo> = getConnectInfo()
-
-    fun getBatteryInfoUI():String = getBatteryInfo.getBatteryPct().toString()
-
     fun setConnectSetting(connectSetting: ConnectSetting){
         _connectSetting = connectSetting
         with(sharedPref.edit()) {
@@ -190,7 +184,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         //if (_connectSetting.cycleMode) {
-          //  closeConnect()
+         // closeConnect()
        // }
     }
 

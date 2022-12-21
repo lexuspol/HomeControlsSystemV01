@@ -64,6 +64,10 @@ interface ApiService {
     suspend fun buttonGateSlidingSBS(
         @Query("\"transmitDate\".buttonGateSlidingSBS")value:String): DataJsonContainerDto
 
+    @PUT("data.json")
+    suspend fun buttonSoundOff(
+        @Query("\"transmitDate\".buttonSoundOff")value:String): DataJsonContainerDto
+
     //@PUT("data.json?\"transmitDate\".buttonWicketUnlock=1")
     //suspend fun buttonWicketUnlock(): DataJsonContainerDto
 

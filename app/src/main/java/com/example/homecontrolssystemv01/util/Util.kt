@@ -1,12 +1,19 @@
 package com.example.homecontrolssystemv01.util
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.example.homecontrolssystemv01.DataID
-import com.example.homecontrolssystemv01.data.mapper.insertMessage
+import com.example.homecontrolssystemv01.R
+import com.example.homecontrolssystemv01.data.database.DataDao
+import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -121,9 +128,62 @@ fun  visible(id:Int, settingList: List<DataSetting>?):Boolean{
 
 }
 
-fun createMessageListLimit(dataModelList: List<DataModel>,
-                           settingList: List<DataSetting>,
-dataFormat: String):List<Message>{
+
+suspend fun insertMessage(context: Context, dataDao: DataDao, idMessage:Int){
+
+    try {
+
+//        if (idMessage == DataID.completeUpdate.id){
+//
+//            dataDao.insertMessage(MessageDbModel(Date().time,
+//                DataID.completeUpdate.id,
+//                MessageType.SYSTEM.int
+//                ,DataID.completeUpdate.name + " OK"))
+//
+//        }else{
+
+        val messageListRes = context.resources.getStringArray(R.array.message)
+
+        messageListRes.forEach { messageItemRes->
+
+            val idRes = messageItemRes.substringBefore('|').toInt()
+
+            if (idRes == idMessage){
+
+                val descriptionRes =messageItemRes.substringAfter('|').substringBefore('^')
+                val typeRes = messageItemRes.substringAfter('^').toInt()
+
+                dataDao.insertMessage(MessageDbModel(Date().time,idMessage,typeRes,descriptionRes))
+
+                return@forEach
+            }
+        }
+    }catch (e:Exception){
+        Log.d("HCS_insertMessage", e.toString())
+        toastMessage(context, "Error insert message to base")
+    }
+}
+
+suspend fun toastMessage(context: Context, message:String){
+    coroutineScope {
+        launch(Dispatchers.Main){
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+}
+
+
+
+
+
+
+
+fun createMessageListLimit(
+    dataModelList: List<DataModel>,
+    settingList: List<DataSetting>,
+    dataFormat: String,
+    alarmMessageDescription: Array<String>
+):List<Message>{
 
    // var time = 0L
 
@@ -134,6 +194,12 @@ dataFormat: String):List<Message>{
 
     val listDataFloat:MutableList<Pair<Int,Float>> = mutableListOf()
     val listDataBool:MutableList<Pair<Int,Float>> = mutableListOf()
+
+    val dataAlarmMessage = dataModelList.find { it.id == DataID.alarmMessage.id }
+    val alarmMessageSetting = settingList.find { it.id == DataID.alarmMessage.id }
+
+
+
 
     dataModelList.forEach { data->
         when(data.type){
@@ -234,6 +300,37 @@ dataFormat: String):List<Message>{
             }
         }
 
+
+    if (alarmMessageSetting != null){
+
+        val alarmWord = createAlarmWord(dataAlarmMessage,alarmMessageSetting)
+
+        if (alarmWord !=null){
+            alarmWord.forEachIndexed { index, bit ->
+                if (bit == '1') {
+                    listMessage.add(
+                        Message(
+                            dateTimeLong,
+                            createAlarmId(DataID.alarmMessage.id,index),
+                            type = MessageType.ALARM.int,
+                            description = alarmMessageDescription[index]
+                        ))
+                }
+            }
+        }else {
+
+            listMessage.add(
+                Message(
+                    dateTimeLong,
+                    DataID.alarmMessage.id,
+                    type = MessageType.WARNING.int,
+                    description = alarmMessageDescription.last()
+                ))
+        }
+
+    }
+
+
     //message контролируется в UI - SwipeRefreshState
     //добавление данного сообщения означает окончание обновления
     listMessage.add(
@@ -264,6 +361,47 @@ fun convertStringTimeToLong(time:String,dataFormat:String):Long{
     }catch (e:ParseException){
         -1L
     }
+}
+
+
+
+fun createAlarmWord(data: DataModel?, setting:DataSetting?):String?{
+
+    val len = 16
+
+return if (data !=null && setting !=null){
+
+    val alarmWord = CharArray(len)
+
+    val alarmSettingString = convertIntToBinaryString(setting.limitMax.toInt(),len)
+
+    if (alarmSettingString.isNotEmpty()){
+        alarmSettingString.forEachIndexed { index, bit ->
+            if (bit == '1' && (data.value?.get(index) ?: '0') == '1') {
+                alarmWord[index] = '1'
+            }else alarmWord[index] = '0'
+        }
+        return String(alarmWord)
+    }else return null
+}else null
+}
+
+fun convertIntToBinaryString(int:Int, len:Int):String{
+    return try {
+        String.format("%" + len + "s", int.toString(2)).replace(" ".toRegex(), "0")
+    }catch (e:IllegalArgumentException ){
+        ""
+    }
+}
+
+fun createAlarmId(id:Int, index:Int):Int{
+
+    return try {
+        ("$id$index").toInt()
+    }catch (e:NumberFormatException){
+        id
+    }
+
 }
 
 

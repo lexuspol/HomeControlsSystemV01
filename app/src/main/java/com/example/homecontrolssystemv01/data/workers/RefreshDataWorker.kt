@@ -2,25 +2,24 @@ package com.example.homecontrolssystemv01.data.workers
 
 import android.content.Context
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.util.Log
-import android.widget.Toast
 import androidx.work.*
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
 import com.example.homecontrolssystemv01.data.database.DataDbModel
-import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
-import com.example.homecontrolssystemv01.data.mapper.insertMessage
-import com.example.homecontrolssystemv01.data.mapper.toastMessage
 import com.example.homecontrolssystemv01.data.network.ApiFactory
+import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.enum.DataType
-import com.example.homecontrolssystemv01.domain.enum.MessageType
+import com.example.homecontrolssystemv01.domain.model.ControlRemote
 import com.example.homecontrolssystemv01.domain.model.ModeConnect
 import com.example.homecontrolssystemv01.util.convertStringTimeToLong
 import com.example.homecontrolssystemv01.util.createMessageListLimit
+import com.example.homecontrolssystemv01.util.insertMessage
+import com.example.homecontrolssystemv01.util.toastMessage
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
@@ -34,6 +33,10 @@ class RefreshDataWorker(
 ) : CoroutineWorker(context, workerParameters) {
 
     private val listDescription = context.resources.getStringArray(R.array.data)
+    private val alarmMessage = context.resources.getStringArray(R.array.alarmMessage)
+
+    private val listResourses = listOf(listDescription,alarmMessage)
+
     private val dataFormat = context.resources.getString(R.string.data_format)
     private var wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
@@ -45,9 +48,7 @@ class RefreshDataWorker(
 
     private val dataDao = AppDatabase.getInstance(context).dataDao()
 
-    private val myRef = Firebase.database(MainRepositoryImpl.FIREBASE_URL).getReference(
-        MainRepositoryImpl.FIREBASE_PATH
-    )
+    private val myRef = Firebase.database(MainRepositoryImpl.FIREBASE_URL)
 
     private val mapper = DataMapper()
 
@@ -56,6 +57,8 @@ class RefreshDataWorker(
     private val idControl = workerParameters.inputData.getInt(ID,0)
     private val valueControl = workerParameters.inputData.getString(VALUE)?:"0"
     private val cycleMode = workerParameters.inputData.getBoolean(NAME_CYCLIC_MODE,false)
+    private val remoteControl = workerParameters.inputData.getBoolean(NAME_REMOTE_CONTROL,false)
+
 
     private val delayTime:Long = 500//milliSeconds
     private val cyclicTime:Long = 5000//milliSeconds
@@ -80,6 +83,9 @@ class RefreshDataWorker(
 
                     val ssid =  wifiManager.connectionInfo.ssid
 
+
+
+
                     dataSystem.add(DataDbModel(DataID.SSID.id,ssid,DataID.SSID.name,DataType.STRING.int))
 
                     if (ssid == ssidSetting){
@@ -87,7 +93,7 @@ class RefreshDataWorker(
 
                         //LOCAL MODE
 
-                        val dataLocal = getLocalData(firstCycle,idControl,valueControl)
+                        val dataLocal = getLocalData(firstCycle)
 
                         dataList =  if (dataLocal != null) {
                             //loop = true
@@ -108,12 +114,13 @@ class RefreshDataWorker(
                             dataSystem
                         }
 
-
-
                     }else{
 
 
                      //REMOTE MODE
+                        loop = false
+
+                        writeControlToRemote()
 
                         val dataRemote = getRemoteData()//вызываем всегда для проверки времени обновления удаленных данных
 
@@ -133,7 +140,7 @@ class RefreshDataWorker(
                             dataSystem
                         }
 
-                        loop = false
+
                     }
 
                     insertDataToDB(dataList)
@@ -143,14 +150,29 @@ class RefreshDataWorker(
                     firstCycle = false
                 }
 
-                delay(cyclicTime)
+                createMessageAndInsertToBase(dataList)
 
-                    createMessageAndInsertToBase(dataList)
+                delay(cyclicTime)
 
             }while (loop)
 
             return Result.success()
         }
+
+    private fun writeControlToRemote() {
+
+        val refControl = myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_CONTROL)
+
+        if (!remoteControl){
+            when(idControl){
+                DataID.buttonWicketUnlock.id ->
+                    //refControl.child("$idControl").setValue(ControlValue.GATE_START.value)
+                    refControl.setValue(
+                        ControlRemote(idControl,ControlValue.GATE_START.value))
+            }
+        }
+
+    }
 
 //    private suspend fun insertMessage(message:MessageDbModel){
 //        try {
@@ -164,13 +186,14 @@ class RefreshDataWorker(
 //
 //    }
 
-
-
     private suspend fun getRemoteData():List<DataDbModel>?{
 
         try {
 
-            val dataSnapshot = myRef.get().await()
+            val refData = myRef.getReference(MainRepositoryImpl.FIREBASE_PATH)
+
+
+            val dataSnapshot = refData.get().await()
 
             if (dataSnapshot != null) {
 
@@ -195,8 +218,6 @@ class RefreshDataWorker(
                         }
 
                     }
-
-
 
                     return remoteData
 
@@ -231,7 +252,7 @@ class RefreshDataWorker(
             coroutineScope {
 
                 val dataList = dataDbList.map {
-                    mapper.mapDataToEntity(it, listDescription,dataFormat,false)
+                    mapper.mapDataToEntity(it, listResourses,dataFormat,false)
                 }
 
 
@@ -240,7 +261,11 @@ class RefreshDataWorker(
                 flow.collect() { list ->
                     val listSetting = list.map { mapper.settingDbModelToEntity(it) }
                     // Log.d("HCS_RefreshDataWorker", listSetting.toString())
-                    val listMessage = createMessageListLimit(dataList, listSetting,dataFormat)
+                    val listMessage = createMessageListLimit(
+                        dataList,
+                        listSetting,
+                        dataFormat,
+                    alarmMessage)
                     val listDbMessage = listMessage.map { mapper.mapEntityToMessage(it) }
                     dataDao.insertMessageList(listDbMessage)
                     //Log.d("HCS_RefreshDataWorker", listDbMessage.toString())
@@ -257,52 +282,34 @@ class RefreshDataWorker(
         }
     }
 
-
-
-
-    private suspend fun getLocalData(firstCycle:Boolean,idControl:Int, valueControl:String):List<DataDbModel>?{
+    private suspend fun getLocalData(firstCycle:Boolean):List<DataDbModel>?{
 
         try {
 
-            val jsonContainer = if (firstCycle){
-                when(idControl){
-                    //0-> apiService.getData()
-                    DataID.buttonLightSleep.id-> apiService.buttonLightSleep(valueControl)
-                    DataID.buttonLightChild.id-> apiService.buttonLightChild(valueControl)
-                    DataID.buttonLightCinema.id-> apiService.buttonLightCinema(valueControl)
-                    DataID.buttonLightOutdoor.id -> apiService.buttonLightOutdoor(valueControl)
-
-                    DataID.meterWater.id-> apiService.setMeterWater(valueControl)
-                    DataID.meterElectricity.id-> apiService.setMeterElectricity(valueControl)
-
-                    DataID.buttonWicketUnlock.id-> apiService.buttonWicketUnlock(valueControl)
-                    DataID.buttonGateGarageSBS.id-> apiService.buttonGateGarageSBS(valueControl)
-                    DataID.buttonGateSlidingSBS.id-> apiService.buttonGateSlidingSBS(valueControl)
-
-                    DataID.mainDeviceName.id -> apiService.setMainDeviceName(valueControl)
-
-                    else -> {apiService.getData()}
+            val jsonContainer = when{
+               firstCycle && !remoteControl -> writeControlToApiService()
+                firstCycle && remoteControl -> {
+                    val json = apiService.getData()
+                    val data = mapper.mapJsonContainerToListValue(json)
+                    val mainDeviceName = data.find { it.id == DataID.mainDeviceName.id }?.value
+                    if (mainDeviceName == infoDevice){
+                        writeControlToApiService()
+                    }else json
                 }
-            }else apiService.getData()
+                else -> apiService.getData()
+           }
 
-            //val jsonContainer = apiService.getData()
-            val dataDtoList = mapper.mapJsonContainerToListValue(jsonContainer)
-            //Log.d("HCS_RefreshDataWorker",dataDtoList[0].value.toString())
-
-            val dataDbModelList = dataDtoList.map {
-                mapper.valueDtoToDbModel(it)
-            }
+            val dataList =  mapper.mapJsonContainerToListValue(jsonContainer)
 
             if (firstCycle){
-                val timeFromApiServer = mapper.convertDateServerToDateUI(dataDbModelList.find {
-                     it.id == DataID.lastTimeUpdate.id
-                 }?.value,dataFormat)
-
+                val timeFromApiServer = mapper.convertDateServerToDateUI(dataList.find {
+                    it.id == DataID.lastTimeUpdate.id
+                }?.value,dataFormat)
                 Log.d("HCS_RefreshDataWorker", "timeLocal = $timeFromApiServer")
             }
 
-
-            return dataDbModelList
+            return mapper.mapJsonContainerToListValue(jsonContainer).map {mapper.valueDtoToDbModel(it)
+            }
 
         }catch (e:Exception){
 
@@ -312,18 +319,45 @@ class RefreshDataWorker(
 
             return null
         }
-
-
-
     }
 
+    private suspend fun writeControlToApiService(): DataJsonContainerDto {
 
+        // для теста
+        if (idControl !=0){
+            val mes = "id = $idControl, value = $valueControl"
+            Log.d("HCS",mes)
+            toastMessage(_context,mes)
+        }
+        /////////
+
+        return when(idControl){
+            //0-> apiService.getData()
+            DataID.buttonLightSleep.id-> apiService.buttonLightSleep(valueControl)
+            DataID.buttonLightChild.id-> apiService.buttonLightChild(valueControl)
+            DataID.buttonLightCinema.id-> apiService.buttonLightCinema(valueControl)
+            DataID.buttonLightOutdoor.id -> apiService.buttonLightOutdoor(valueControl)
+
+            DataID.meterWater.id-> apiService.setMeterWater(valueControl)
+            DataID.meterElectricity.id-> apiService.setMeterElectricity(valueControl)
+
+            DataID.buttonWicketUnlock.id-> apiService.buttonWicketUnlock(valueControl)
+            DataID.buttonGateGarageSBS.id-> apiService.buttonGateGarageSBS(valueControl)
+            DataID.buttonGateSlidingSBS.id-> apiService.buttonGateSlidingSBS(valueControl)
+
+            DataID.mainDeviceName.id -> apiService.setMainDeviceName(valueControl)
+
+            DataID.buttonSoundOff.id -> apiService.buttonSoundOff(valueControl)
+
+            else -> {apiService.getData()}
+        }
+    }
 
     companion object {
 
 
         const val NAME_ONE_TIME = "RefreshDataWorker_ONE_TIME"
-        const val NAME_REMOTE_MODE = "Remote_MODE"
+        const val NAME_REMOTE_CONTROL = "Remote_CONTROL"
         const val NAME_CYCLIC_MODE = "Cyclic_MODE"
         const val NAME_SETTING_SSID = "SSID"
         const val NAME_INFO_DEVICE = "Info_Device"
@@ -332,21 +366,24 @@ class RefreshDataWorker(
         const val VALUE = "value"
 
         fun makeRequestOneTime(ssid:String, idControl:Int,
-                               valueControl:String,cyclicMode:Boolean,infoDevice:String): OneTimeWorkRequest {
+                               valueControl:String,cyclicMode:Boolean,
+                               infoDevice:String,remoteControl:Boolean): OneTimeWorkRequest {
             return OneTimeWorkRequestBuilder<RefreshDataWorker>()
                 .setConstraints(makeConstraints())
-                .setInputData(modeToData(ssid, idControl, valueControl,cyclicMode,infoDevice))
+                .setInputData(modeToData(ssid, idControl, valueControl,cyclicMode,infoDevice, remoteControl))
                 .build()
         }
 
         private fun modeToData(ssid:String, idControl:Int,
-                               valueControl:String, cyclicMode:Boolean,infoDevice:String): Data {
+                               valueControl:String,
+                               cyclicMode:Boolean,infoDevice:String,remoteControl:Boolean): Data {
             return Data.Builder()
                 .putString(NAME_SETTING_SSID,ssid)
                 .putInt(ID,idControl)
                 .putString(VALUE,valueControl)
                 .putBoolean(NAME_CYCLIC_MODE,cyclicMode)
                 .putString(NAME_INFO_DEVICE,infoDevice)
+                .putBoolean(NAME_REMOTE_CONTROL,remoteControl)
                 .build()
         }
 

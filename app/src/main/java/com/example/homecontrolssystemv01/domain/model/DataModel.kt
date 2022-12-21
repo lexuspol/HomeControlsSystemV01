@@ -6,6 +6,6 @@ val value:String?="",
 val name:String?="",
 val type:Int=0,
 var description:String = "",
-var unit:String = ""
-
+var unit:String = "",
+val listString: List<String> = listOf()
 )

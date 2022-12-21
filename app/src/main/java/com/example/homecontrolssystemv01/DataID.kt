@@ -17,7 +17,7 @@ enum class DataID(val id:Int) {
     lightSleepState(511),
     lightChildState(512),
     lightCinemaState(513),
-    lightOutdoorState(514),
+    lightOutdoorState(515),
 
     buttonLightSleep(-101),
     buttonLightChild(-102),
@@ -32,9 +32,18 @@ enum class DataID(val id:Int) {
     buttonGateGarageSBS(-112),
     buttonGateSlidingSBS(-113),
 
+    slidingGateRunOpen(531),
+    slidingGateRunClose(532),
+
+    buttonSoundOff(-121),
+    stateSoundOff(509),
+
     completeUpdate(1000),
 
-    mainDeviceName(400)
+    mainDeviceName(400),
+
+    alarmMessage(601)
+
 }
 
 
