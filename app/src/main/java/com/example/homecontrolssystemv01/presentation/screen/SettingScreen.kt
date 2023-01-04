@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,12 +9,10 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -23,6 +20,8 @@ import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.message.ModeConnect
 import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
@@ -70,14 +69,15 @@ fun SettingScreen(
         }
     }
 
-    var enableControl = connectMode==ModeConnect.LOCAL.name
+    var enableControl = connectMode== ModeConnect.LOCAL.name
 
 
     Scaffold (
         backgroundColor = MaterialTheme.colors.primarySurface,
  //       modifier = Modifier.padding(10.dp),
         topBar = { AppBarSetting(pressOnBack)})
-    { padding ->
+    {
+            padding ->
         //val modifierScaffold = Modifier.padding(padding)
         LazyColumn(
             modifier = Modifier

@@ -4,6 +4,7 @@
     <string name="menu_message">MESSAGE</string>
     <string name="menu_control">CONTROL</string>
     <string name="setting">Setting</string>
+    <string name="shop">ShopList</string>
     <string name="data_format">yyyy-MM-dd HH:mm:ss</string>
 
     <string-array name="data">

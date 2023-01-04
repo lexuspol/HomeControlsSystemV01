@@ -1,16 +1,11 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
-import androidx.compose.animation.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.data.DataContainer
+import com.example.homecontrolssystemv01.domain.model.message.ModeConnect
 //import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.giveDataById
 
@@ -100,7 +97,7 @@ fun ControlListScreen(
 
 @Composable
 fun PageBox1(listDataContainer:MutableList<DataContainer>, localState:Boolean,
-            onControl: (ControlInfo) -> Unit){
+             onControl: (ControlInfo) -> Unit){
 
     Column() {
 
@@ -145,7 +142,7 @@ fun PageBox2(listDataContainer:MutableList<DataContainer>, localState:Boolean,
 }
 
 @Composable
-fun ButtonLight(dataState: DataContainer,dataControl: DataContainer,localState:Boolean,onValueChange: (ControlInfo) -> Unit){
+fun ButtonLight(dataState: DataContainer, dataControl: DataContainer, localState:Boolean, onValueChange: (ControlInfo) -> Unit){
 
 
     val colorOn = Color.Yellow

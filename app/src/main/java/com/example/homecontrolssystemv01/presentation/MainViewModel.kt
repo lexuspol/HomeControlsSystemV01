@@ -7,17 +7,20 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
-import com.example.homecontrolssystemv01.domain.BatteryMonitor
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
+import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
 import com.example.homecontrolssystemv01.domain.useCase.*
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -26,8 +29,6 @@ import java.util.*
 
 
 class MainViewModel(application: Application): AndroidViewModel(application) {
-
-
 
     private val aplic = application
 
@@ -51,7 +52,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
 
-
     private fun createConnectSetting(): ConnectSetting {
         return ConnectSetting(
             _connectSetting.ssid,
@@ -66,11 +66,9 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
 
     fun putDataSettingUI(dataSetting: DataSetting){
-
         viewModelScope.launch {
             putDataSetting(dataSetting)
         }
-
     }
 
     fun resetCycleMode(){
@@ -87,25 +85,29 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         )
     }
 
-
-
-
-
     fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
 
     fun getDataListUI(): LiveData<List<DataModel>> {
         return getDataList()
     }
+
+    //без юскейса
+    fun getShopListUI(): SnapshotStateList<ShopItem> {
+        return repository.getShopList()
+    }
+
+    fun addShopItemUI(item:ShopItem){
+        repository.addShopItem(item)
+    }
+
+    fun deleteShopItemUI(id: Int){
+        repository.deleteItem(id)
+    }
+
+
+
     fun getMessageListUI(): LiveData<List<Message>> {
-
         val messageList = getMessageList()
-
-
-
-       // Log.d("HCS_getMessageListUI","get")
-
-        //putMessageListUI(listOf())//зачем
-
         return messageList
 
     }
@@ -127,7 +129,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
 
 
-    private fun putMessage(message:Message){
+    private fun putMessage(message: Message){
 
        // Log.d("HCS_putMessageListUI","${list.isEmpty()}")
         viewModelScope.launch {

@@ -2,7 +2,6 @@ package com.example.homecontrolssystemv01.data.mapper
 
 
 
-import android.util.Log
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
@@ -10,11 +9,11 @@ import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
 import com.example.homecontrolssystemv01.domain.enum.DataType
-import com.example.homecontrolssystemv01.domain.model.DataModel
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
-import com.example.homecontrolssystemv01.domain.model.Message
+import com.example.homecontrolssystemv01.domain.model.message.Message
+import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
 import com.google.gson.Gson
-import java.text.SimpleDateFormat
 
 
 class DataMapper {
@@ -61,6 +60,10 @@ class DataMapper {
 
     )
 
+//
+
+
+
 
         fun mapDataToEntity(dataDb: DataDbModel,
                             listResourses:List<Array<String>>,
@@ -68,7 +71,7 @@ class DataMapper {
                             converBool:Boolean
          //                   setting:List<DataSettingDbModel>,
 
-        ):DataModel {
+        ): DataModel {
             var description= dataDb.name.toString()
             var unit= ""
             var valueBoolFor_1 = "1"
@@ -185,7 +188,7 @@ class DataMapper {
 
     }
 
-    fun mapMessageToEntity(message: MessageDbModel):Message {
+    fun mapMessageToEntity(message: MessageDbModel): Message {
         return  Message(
             time = message.time,
             id = message.id,

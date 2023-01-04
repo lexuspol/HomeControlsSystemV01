@@ -12,27 +12,29 @@ import com.example.homecontrolssystemv01.presentation.MainViewModel
 fun MainScreen(viewModel:MainViewModel) {
 
     val dataList = viewModel.getDataListUI().observeAsState().value
-    //val settingList = viewModel.getDataSettingUI().observeAsState().value
-    //val ssid = viewModel.getDataListUI().observeAsState().value?.find { it.id == DataID.SSID.id }?.value
+    val shopList = viewModel.getShopListUI()
 
-    //val ssid = dataList?.find { it.id == DataID.SSID.id }?.value
-    //val mainDeviceName = dataList?.find { it.id == DataID.mainDeviceName.id }
-
-    //viewModel.putMessageListUI(createMessageListLimit(dataList,
-        //settingList))
-
-    //val listSsid = viewModel.getSsidListForRadioButton()
-    //val prefSsid
     val connectSetting = viewModel.getConnectSettingUI()
     val systemSetting = viewModel.getSystemSettingUI()
 
     val navController = rememberNavController()
 
-        NavHost(navController = navController, startDestination = NavScreen.DataScreen.route) {
+    NavHost(navController = navController, startDestination = NavScreen.DataScreen.route) {
             composable(NavScreen.DataScreen.route) {
                 DataScreen(viewModel = viewModel,
+                    selectItem = {navController.navigate(it)},
                     selectSetting = {navController.navigate(NavScreen.SettingScreen.route)})
             }
+
+        composable(NavScreen.ShopScreen.route) {
+            ShopScreen(
+                shopList,
+                addItem = {viewModel.addShopItemUI(it)},
+                deleteItem = {viewModel.deleteShopItemUI(it)}
+            ){navController.navigateUp()}
+        }
+
+
             composable(NavScreen.SettingScreen.route) {
                 SettingScreen(connectSetting,systemSetting,dataList,
                     setConnectSetting = {viewModel.setConnectSetting(it)},
@@ -40,13 +42,16 @@ fun MainScreen(viewModel:MainViewModel) {
                     onControl = {viewModel.putControlUI(it)}
                 ){navController.navigateUp()}
             }
+
+
+
         }
 }
 
 sealed class NavScreen(val route: String) {
 
     object DataScreen : NavScreen("DataScreen")
-
+    object ShopScreen : NavScreen("ShopScreen")
     object SettingScreen : NavScreen("SettingScreen")
 
 }

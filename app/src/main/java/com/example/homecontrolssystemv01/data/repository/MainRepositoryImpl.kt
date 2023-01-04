@@ -4,7 +4,9 @@ import android.app.Application
 import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Transformations
 import androidx.work.*
@@ -15,16 +17,17 @@ import com.example.homecontrolssystemv01.data.workers.PeriodicDataWorker
 import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
-import com.example.homecontrolssystemv01.domain.model.DataModel
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
-
 
 class MainRepositoryImpl (private val application: Application): DataRepository {
 
@@ -48,6 +51,8 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
     private val myRef = Firebase.database(FIREBASE_URL)//.getReference(FIREBASE_PATH)
     private var addRemoteListener = false
 
+    private val shopListMSL = mutableStateListOf(ShopItem())
+
     //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
     //запускаем слушателя в loadData
     private val valueEventListener: ValueEventListener = object : ValueEventListener {
@@ -57,7 +62,7 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
             val dataFirebaseValue = snapshot.child("value").getValue<String>()?:"0"
 
                 if (dataFirebaseID != 0){
-                   Log.d("HCS_FIREBASE", "statr worker value = $dataFirebaseValue")
+                   Log.d("HCS_FIREBASE", "start worker value = $dataFirebaseValue")
                     putControl(ControlInfo(dataFirebaseID,dataFirebaseValue,0,true))
                     removeValueControlRemote()
                 }
@@ -69,9 +74,34 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
         }
     }
 
+    private val shopEventListener: ValueEventListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+
+            val data = snapshot.getValue<List<ShopItem?>>()
+
+            shopListMSL.clear()
+
+            if (data != null){
+                data.forEach {item->
+                    if (item != null){ shopListMSL.add(item) }
+                }
+
+                shopListMSL.sortBy { it.groupId }
+                shopListMSL.sortBy { !it.enabled }
+
+            }else {
+                shopListMSL.clear()
+            }
+           // Log.d("HCS","shop = $data")
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // Failed to read value
+            Log.w("HCS_FIREBASE_ERROR", "Failed to read shop value.", error.toException())
+        }
+    }
 
 override fun getDataList(): LiveData<List<DataModel>> {
-
     return Transformations.map(dataDao.getValueList()) { list ->
         list.map {
             mapper.mapDataToEntity(it, listResourses,dataFormat,true)
@@ -80,7 +110,6 @@ override fun getDataList(): LiveData<List<DataModel>> {
 }
 
     override fun getMessageList(): LiveData<List<Message>> {
-
         return Transformations.map(dataDao.getMessageList()) { list ->
             list.map {
                 mapper.mapMessageToEntity(it)
@@ -98,9 +127,20 @@ override fun getDataList(): LiveData<List<DataModel>> {
     }
 
     override suspend fun deleteData(id:Int){
-
         dataDao.deleteData(id)
+    }
 
+    override fun getShopList(): SnapshotStateList<ShopItem> {
+        //myRef.getReference(FIREBASE_PATH_SHOP).addValueEventListener(shopEventListener)
+        return shopListMSL
+    }
+
+    override fun addShopItem(item: ShopItem) {
+        myRef.getReference(FIREBASE_PATH_SHOP).child(item.itemId.toString()).setValue(item)
+    }
+
+    override fun deleteItem(id: Int) {
+        myRef.getReference(FIREBASE_PATH_SHOP).child(id.toString()).removeValue()
     }
 
     override fun getDataSetting(): LiveData<List<DataSetting>> {
@@ -160,7 +200,6 @@ override fun getDataList(): LiveData<List<DataModel>> {
     }
 
     private fun startPeriodicDataWorker(ssidSetting:String){
-
             workManager.enqueueUniquePeriodicWork(
                 PeriodicDataWorker.NAME_PERIODIC,
                 ExistingPeriodicWorkPolicy.KEEP,
@@ -173,7 +212,6 @@ override fun getDataList(): LiveData<List<DataModel>> {
     }
 
     override fun putControl(controlInfo: ControlInfo) {
-
         startRefreshDataWorker(_connectSetting.ssid,
             controlInfo.id,
             controlInfo.value,
@@ -198,6 +236,8 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
     init {
         addRemoteListener = true// разобраться нужно ли это делать тут или сразу объявить в поле
+
+        myRef.getReference(FIREBASE_PATH_SHOP).addValueEventListener(shopEventListener)
     }
 
     companion object{
@@ -205,6 +245,7 @@ override fun getDataList(): LiveData<List<DataModel>> {
             "https://homesystemcontrolv01-default-rtdb.asia-southeast1.firebasedatabase.app"
         const val FIREBASE_PATH = "data"
         const val FIREBASE_PATH_CONTROL = "controlRemove"
+        const val FIREBASE_PATH_SHOP = "shop"
     }
 
 }

@@ -15,7 +15,7 @@ import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.ControlRemote
-import com.example.homecontrolssystemv01.domain.model.ModeConnect
+import com.example.homecontrolssystemv01.domain.model.message.ModeConnect
 import com.example.homecontrolssystemv01.util.convertStringTimeToLong
 import com.example.homecontrolssystemv01.util.createMessageListLimit
 import com.example.homecontrolssystemv01.util.insertMessage

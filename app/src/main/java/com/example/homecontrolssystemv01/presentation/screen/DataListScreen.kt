@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.data.DataContainer
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 import com.example.homecontrolssystemv01.util.convertIntToBinaryString
@@ -62,7 +64,8 @@ fun DataListScreen(
             }
         ) {
             LazyColumnCreate(
-                modifier,listDataContainer,showDetails,onSettingChange, onControl,deleteData)
+                modifier,listDataContainer,showDetails,
+                onSettingChange, onControl,deleteData)
         }
 }
 
@@ -73,7 +76,7 @@ fun LazyColumnCreate(
     showDetails:Boolean,
     onSettingChange: (DataSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,
-deleteData: (Int) -> Unit
+    deleteData: (Int) -> Unit
 )
 
 {
@@ -94,15 +97,15 @@ deleteData: (Int) -> Unit
 
                     if (allList){
                         if (showDetails) {
-                            DataRow(container,onSettingChange,onControl,deleteData,true)
+                            DataRow(modifier,container,onSettingChange,onControl,deleteData,true)
                         }else {
                             if (container.id in 0..lastIndexData) {
-                                DataRow(container,onSettingChange,onControl,deleteData)
+                                DataRow(modifier,container,onSettingChange,onControl,deleteData)
                             }
                         }
                     }else{
                         if (container.setting.visible) {
-                            DataRow(container,onSettingChange,onControl,deleteData)
+                            DataRow(modifier,container,onSettingChange,onControl,deleteData)
                         }
 
                     }
@@ -133,7 +136,9 @@ deleteData: (Int) -> Unit
                         style = MaterialTheme.typography.subtitle1
                     )
                     Button(
-                        onClick = { allList = !allList },
+                        onClick = {
+                            allList = !allList
+                                  },
                         // Modifier.padding(end = 5.dp),
                       //  colors = ButtonDefaults.buttonColors(backgroundColor = Purple700)
                     ) {
@@ -155,11 +160,13 @@ deleteData: (Int) -> Unit
 
 
 @Composable
-fun DataRow(dataContainer: DataContainer,
-            onSettingChange: (DataSetting) -> Unit,
-            onValueChange: (ControlInfo) -> Unit,
-            deleteData: (Int) ->Unit,
-            showDetails:Boolean = false){
+fun DataRow(
+    modifier:Modifier,
+    dataContainer: DataContainer,
+    onSettingChange: (DataSetting) -> Unit,
+    onValueChange: (ControlInfo) -> Unit,
+    deleteData: (Int) ->Unit,
+    showDetails:Boolean = false){
 
     val data = dataContainer.dataModel
     val setting = dataContainer.setting
@@ -181,7 +188,7 @@ fun DataRow(dataContainer: DataContainer,
         //backgroundColor = Purple500
     ) {
         if (showDialog.value){
-            MyAlertDialog(data,
+            MyAlertDialog(modifier,data,
                 setting,
                 showDialog = showDialog.value,
                 onDismiss = {showDialog.value = false},
@@ -259,351 +266,406 @@ fun DataRow(dataContainer: DataContainer,
 
 
 @Composable
-private fun MyAlertDialog(dataModel: DataModel,
-                          setting: DataSetting,
-                          showDialog: Boolean,
-                          onDismiss: () -> Unit,
-                          onSettingChange: (DataSetting) -> Unit,
-                          onValueChange: (ControlInfo) -> Unit,
-                          deleteData: (Int) ->Unit,
-                          showDetails: Boolean
-){
+private fun MyAlertDialog(
+    modifier:Modifier,
+    dataModel: DataModel,
+    setting: DataSetting,
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onSettingChange: (DataSetting) -> Unit,
+    onValueChange: (ControlInfo) -> Unit,
+    deleteData: (Int) ->Unit,
+    showDetails: Boolean
+) {
 
     val len = 16//количество bit в сообщении
 
-    val checkedStateVisible = remember { mutableStateOf(setting.visible)}
-    val checkedStateLimit = remember { mutableStateOf(setting.limitMode)}
-    val checkedStateSetCounter = remember { mutableStateOf(false)}
+    val checkedStateVisible = remember { mutableStateOf(setting.visible) }
+    val checkedStateLimit = remember { mutableStateOf(setting.limitMode) }
+    val checkedStateSetCounter = remember { mutableStateOf(false) }
 
     var textLimitMax by remember { mutableStateOf(setting.limitMax.toString()) }
     var textLimitMin by remember { mutableStateOf(setting.limitMin.toString()) }
-    val errorStateMax = remember { mutableStateOf(false)}
-    val errorStateMin = remember { mutableStateOf(false)}
+    val errorStateMax = remember { mutableStateOf(false) }
+    val errorStateMin = remember { mutableStateOf(false) }
 
     var textSetCount by remember { mutableStateOf(dataModel.value.toString()) }
-    val errorStateSetCount = remember { mutableStateOf(false)}
+    val errorStateSetCount = remember { mutableStateOf(false) }
 
-    val checkedStateDeleteData = remember {mutableStateOf(false)}
+    val checkedStateDeleteData = remember { mutableStateOf(false) }
 
-    val checkedStateWarning_0 = remember {mutableStateOf(setting.limitMin==1f)}
-    val checkedStateWarning_1 = remember {mutableStateOf(setting.limitMax==1f)}
+    val checkedStateWarning_0 = remember { mutableStateOf(setting.limitMin == 1f) }
+    val checkedStateWarning_1 = remember { mutableStateOf(setting.limitMax == 1f) }
 
-    val switchRem = remember { mutableStateOf(convertIntToBinaryString(setting.limitMax.toInt(),len))}
+    val switchRem =
+
+        remember { mutableStateOf(convertIntToBinaryString(setting.limitMax.toInt(), len)) }
+
+    if (showDialog) {
+
+    Box() {
 
 
 
-        if(showDialog){
-        AlertDialog(
-            onDismissRequest = onDismiss
-                // Dismiss the dialog when the user clicks outside the dialog or on the back
-                // button. If you want to disable that functionality, simply use an empty
-                // onCloseRequest.
-                //openDialog.value = false
-            ,
-            title = {
+                    AlertDialog(
 
-                if (dataModel.type == DataType.STRING.int ||
-                    dataModel.type == DataType.DTL.int||
-                    dataModel.type == DataType.WORD.int ){
-                    Column() {
-                        Text(text = dataModel.description)
-                        Text(text = dataModel.value.toString())
-                    }
-                }else{
-                    Row(modifier = Modifier
-                        .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = dataModel.description)
-                        Text(text = dataModel.value.toString())
-                        Text(text = if (dataModel.type!=DataType.BOOL.int) dataModel.unit else "  ")
-                    }
-                }
+                        onDismissRequest = onDismiss
+                        // Dismiss the dialog when the user clicks outside the dialog or on the back
+                        // button. If you want to disable that functionality, simply use an empty
+                        // onCloseRequest.
+                        //openDialog.value = false
+                        ,
 
-            },
-            text = {
-                Column() {
+                        title = {
 
-                    if (showDetails){
-                        Box(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp)){
-                            Column(modifier = Modifier
-                                .fillMaxWidth()
- //                               .padding(10.dp)
+                            if (dataModel.type == DataType.STRING.int ||
+                                dataModel.type == DataType.DTL.int ||
+                                dataModel.type == DataType.WORD.int
                             ) {
-
+                                Column() {
+                                    Text(text = dataModel.description)
+                                    Text(text = dataModel.value.toString())
+                                }
+                            } else {
                                 Row(
-                                    //Modifier.padding(5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = "ID: ${dataModel.id} ")
+                                    Text(text = dataModel.description)
+                                    Text(text = dataModel.value.toString())
+                                    Text(text = if (dataModel.type != DataType.BOOL.int) dataModel.unit else "  ")
+                                }
+                            }
 
-                                    Checkbox(
-                                        checked = checkedStateDeleteData.value,
-                                        onCheckedChange = { checkedStateDeleteData.value = it },
-                                        colors  = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xff, 0xb6, 0xc1),
-                                            checkmarkColor = Color.Red)
-                                    )
-                                    Text(text = "Delete Data")
+                        },
+                        text = {
+                            Column() {
+
+                                if (showDetails) {
+                                    Box(
+                                        modifier = Modifier
+                                            // .fillMaxWidth()
+                                            .padding(10.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                            //   .fillMaxWidth()
+                                            //                               .padding(10.dp)
+                                        ) {
+
+                                            Row(
+                                                //Modifier.padding(5.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(text = "ID: ${dataModel.id} ")
+
+                                                Checkbox(
+                                                    checked = checkedStateDeleteData.value,
+                                                    onCheckedChange = { checkedStateDeleteData.value = it },
+                                                    colors = CheckboxDefaults.colors(
+                                                        checkedColor = Color(0xff, 0xb6, 0xc1),
+                                                        checkmarkColor = Color.Red
+                                                    )
+                                                )
+                                                Text(text = "Delete Data")
+                                            }
+
+                                            Text(text = "Name: ${dataModel.name}")
+                                            Text(text = "Type: ${dataModel.type}")
+
+
+                                        }
+                                    }
+
+
                                 }
 
-                                Text(text = "Name: ${dataModel.name}")
-                                Text(text = "Type: ${dataModel.type}")
 
 
-
-                            }
-                        }
-
-
-                    }
-
-
-
-                    Row() {
-                        Switch(checked = checkedStateVisible.value, onCheckedChange = {
-                            checkedStateVisible.value = it
-                        })
-                        Text(
-                        text = "Visible",
-                        //style = MaterialTheme.typography.body1.merge(),
-                        //modifier = Modifier.padding(start = 16.dp)
-                        )
-                    }
-
-                    if (dataModel.type==DataType.BOOL.int){
-
-                        Row() {
-                            Switch(checked = checkedStateLimit.value, onCheckedChange = {
-                                checkedStateLimit.value = it
-                            })
-                            Text(
-                                text = "Limit mode",
-                                //style = MaterialTheme.typography.body1.merge(),
-                                //modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "Warning")
-                            Checkbox(
-                                checked = checkedStateWarning_1.value,
-                                enabled = checkedStateLimit.value,
-                                onCheckedChange = {
-                                    checkedStateWarning_0.value = false
-                                    checkedStateWarning_1.value = it }
-                            )
-                            Text(text = "=${dataModel.unit.substringBefore('/')}")
-                            Checkbox(
-                                checked = checkedStateWarning_0.value,
-                                enabled = checkedStateLimit.value,
-                                onCheckedChange = {
-                                    checkedStateWarning_1.value = false
-                                    checkedStateWarning_0.value = it }
-                            )
-                            Text(text = "=${dataModel.unit.substringAfter('/')}")
-
-
-                        }
-                    }
-
-
-
-                    if (dataModel.type==DataType.REAL.int) {
-                        Row() {
-                            Switch(checked = checkedStateLimit.value, onCheckedChange = {
-                                checkedStateLimit.value = it
-                            })
-                            Text(
-                                text = "Limit mode",
-                                //style = MaterialTheme.typography.body1.merge(),
-                                //modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-                        OutlinedTextField(
-                            value = textLimitMax,
-                            onValueChange = {
-                                errorStateMax.value = it.toFloatOrNull()==null
-                                textLimitMax = it.replace(",",".",false)
-                                            },
-                            enabled = checkedStateLimit.value,
-                            label = {Text(text = "Max")},
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            trailingIcon = {
-                                if (errorStateMax.value) Icon(Icons.Filled.Warning, contentDescription = "Error", tint = Color.Red)
-                            }
-                        )
-                        OutlinedTextField(
-                            value = textLimitMin,
-                            onValueChange = {
-                                errorStateMin.value = it.toFloatOrNull()==null
-                                textLimitMin = it.replace(",",".",false)
-                            },
-                            enabled = checkedStateLimit.value,
-                                    label = {Text(text = "Min")},
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    trailingIcon = {
-                                if (errorStateMin.value) Icon(Icons.Filled.Warning, contentDescription = "Error", tint = Color.Red)
-                            }
-                        )
-                    }
-                    if (dataModel.type==DataType.DINT.int) {
-                        Row() {
-                            Switch(checked = checkedStateSetCounter.value, onCheckedChange = {
-                                checkedStateSetCounter.value = it
-                            })
-                            Text(
-                                text = "Set Counter",
-                                //style = MaterialTheme.typography.body1.merge(),
-                                //modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-                        OutlinedTextField(
-                            value = textSetCount,
-                            onValueChange = {
-                                errorStateSetCount.value = it.toLongOrNull()==null
-                                textSetCount = it
-                            },
-                            enabled = checkedStateSetCounter.value,
-                            label = {Text(text = "Set")},
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            trailingIcon = {
-                                if (errorStateSetCount.value) Icon(Icons.Filled.Warning, contentDescription = "Error", tint = Color.Red)
-                            }
-                        )
-
-
-                    }
-
-                    if (dataModel.type==DataType.WORD.int && dataModel.listString.isNotEmpty()){
-
-                        val listMessageDescription = dataModel.listString
-                        val lastIndex = listMessageDescription.size-1
-                        //последнее сообщение - это общее системное сообщение
-
-
-                       // val switch = setting.limitMax.toInt()
-                       // val switchBin = convertIntToBinaryString(switch,16)
-                        
-                        LazyColumn{
-                            itemsIndexed(dataModel.listString.subList(0,lastIndex)){index, string ->
-                                Row(
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
-//                                        .padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    ) {
-
+                                Row() {
+                                    Switch(checked = checkedStateVisible.value, onCheckedChange = {
+                                        checkedStateVisible.value = it
+                                    })
                                     Text(
-                                        text = string,
+                                        text = "Visible",
                                         //style = MaterialTheme.typography.body1.merge(),
                                         //modifier = Modifier.padding(start = 16.dp)
                                     )
+                                }
 
-                                        Switch(checked = if(switchRem.value.isNotEmpty()) switchRem.value[index] == '1' else false,
-                                            onCheckedChange = {booleon->
-                                                val char = if(booleon) '1' else '0'
-                                                val sb = StringBuilder(switchRem.value).also { it.setCharAt(index, char) }
-                                                switchRem.value = sb.toString()
-                                            },
-                                        enabled = switchRem.value.isNotEmpty()
+                                if (dataModel.type == DataType.BOOL.int) {
+
+                                    Row() {
+                                        Switch(checked = checkedStateLimit.value, onCheckedChange = {
+                                            checkedStateLimit.value = it
+                                        })
+                                        Text(
+                                            text = "Limit mode",
+                                            //style = MaterialTheme.typography.body1.merge(),
+                                            //modifier = Modifier.padding(start = 16.dp)
+                                        )
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "Warning")
+                                        Checkbox(
+                                            checked = checkedStateWarning_1.value,
+                                            enabled = checkedStateLimit.value,
+                                            onCheckedChange = {
+                                                checkedStateWarning_0.value = false
+                                                checkedStateWarning_1.value = it
+                                            }
+                                        )
+                                        Text(text = "=${dataModel.unit.substringBefore('/')}")
+                                        Checkbox(
+                                            checked = checkedStateWarning_0.value,
+                                            enabled = checkedStateLimit.value,
+                                            onCheckedChange = {
+                                                checkedStateWarning_1.value = false
+                                                checkedStateWarning_0.value = it
+                                            }
+                                        )
+                                        Text(text = "=${dataModel.unit.substringAfter('/')}")
+
+
+                                    }
+                                }
+
+
+
+                                if (dataModel.type == DataType.REAL.int) {
+                                    Row() {
+                                        Switch(checked = checkedStateLimit.value, onCheckedChange = {
+                                            checkedStateLimit.value = it
+                                        })
+                                        Text(
+                                            text = "Limit mode",
+                                            //style = MaterialTheme.typography.body1.merge(),
+                                            //modifier = Modifier.padding(start = 16.dp)
+                                        )
+                                    }
+                                    OutlinedTextField(
+                                        value = textLimitMax,
+                                        onValueChange = {
+                                            errorStateMax.value = it.toFloatOrNull() == null
+                                            textLimitMax = it.replace(",", ".", false)
+                                        },
+                                        enabled = checkedStateLimit.value,
+                                        label = { Text(text = "Max") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        trailingIcon = {
+                                            if (errorStateMax.value) Icon(
+                                                Icons.Filled.Warning,
+                                                contentDescription = "Error",
+                                                tint = Color.Red
                                             )
+                                        }
+                                    )
+                                    OutlinedTextField(
+                                        value = textLimitMin,
+                                        onValueChange = {
+                                            errorStateMin.value = it.toFloatOrNull() == null
+                                            textLimitMin = it.replace(",", ".", false)
+                                        },
+                                        enabled = checkedStateLimit.value,
+                                        label = { Text(text = "Min") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        trailingIcon = {
+                                            if (errorStateMin.value) Icon(
+                                                Icons.Filled.Warning,
+                                                contentDescription = "Error",
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    )
+                                }
+                                if (dataModel.type == DataType.DINT.int) {
+                                    Row() {
+                                        Switch(checked = checkedStateSetCounter.value, onCheckedChange = {
+                                            checkedStateSetCounter.value = it
+                                        })
+                                        Text(
+                                            text = "Set Counter",
+                                            //style = MaterialTheme.typography.body1.merge(),
+                                            //modifier = Modifier.padding(start = 16.dp)
+                                        )
+                                    }
+                                    OutlinedTextField(
+                                        value = textSetCount,
+                                        onValueChange = {
+                                            errorStateSetCount.value = it.toLongOrNull() == null
+                                            textSetCount = it
+                                        },
+                                        enabled = checkedStateSetCounter.value,
+                                        label = { Text(text = "Set") },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        trailingIcon = {
+                                            if (errorStateSetCount.value) Icon(
+                                                Icons.Filled.Warning,
+                                                contentDescription = "Error",
+                                                tint = Color.Red
+                                            )
+                                        }
+                                    )
+
 
                                 }
+
+                                //WORD
+                                if (dataModel.type == DataType.WORD.int && dataModel.listString.isNotEmpty()) {
+
+                                    val listMessageDescription = dataModel.listString
+                                    val lastIndex = listMessageDescription.size - 1
+                                    //последнее сообщение - это общее системное сообщение
+
+
+                                    // val switch = setting.limitMax.toInt()
+                                    // val switchBin = convertIntToBinaryString(switch,16)
+
+                                    LazyColumn(Modifier.fillMaxHeight(0.8f)) {
+                                        itemsIndexed(
+                                            dataModel.listString.subList(
+                                                0,
+                                                lastIndex
+                                            )
+                                        ) { index, string ->
+                                            Row(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth()
+//                                        .padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+
+                                                Text(
+                                                    text = string,
+                                                    //style = MaterialTheme.typography.body1.merge(),
+                                                    //modifier = Modifier.padding(start = 16.dp)
+                                                )
+
+                                                Switch(
+                                                    checked = if (switchRem.value.isNotEmpty()) switchRem.value[index] == '1' else false,
+                                                    onCheckedChange = { booleon ->
+                                                        val char = if (booleon) '1' else '0'
+                                                        val sb = StringBuilder(switchRem.value).also {
+                                                            it.setCharAt(
+                                                                index,
+                                                                char
+                                                            )
+                                                        }
+                                                        switchRem.value = sb.toString()
+                                                    },
+                                                    enabled = switchRem.value.isNotEmpty()
+                                                )
+
+                                            }
+                                        }
+                                    }
+
+
+                                }
+
                             }
-                        }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    onDismiss()
+
+                                    var limitMax = setting.limitMax
+
+                                    when (dataModel.type) {
+                                        DataType.REAL.int -> {
+                                            if (!errorStateMax.value) limitMax =
+                                                stringLimittoFlout(textLimitMax)
+                                        }
+                                        DataType.BOOL.int -> {
+                                            limitMax = if (checkedStateWarning_1.value) 1f else 0f
+                                        }
+                                        DataType.WORD.int -> {
+                                            limitMax = switchRem.value.toInt(2).toFloat()// сделать проверку
+                                        }
+                                    }
+
+                                    var limitMin = setting.limitMin
+
+                                    when (dataModel.type) {
+                                        DataType.REAL.int -> {
+                                            if (!errorStateMin.value) limitMin =
+                                                stringLimittoFlout(textLimitMin)
+                                        }
+                                        DataType.BOOL.int -> {
+                                            limitMin = if (checkedStateWarning_0.value) 1f else 0f
+                                        }
+                                    }
 
 
+                                    onSettingChange(
+                                        DataSetting(
+                                            id = dataModel.id,
+                                            description = dataModel.description,
+                                            visible = checkedStateVisible.value,
+                                            limitMode = checkedStateLimit.value,
+                                            limitMax = limitMax,
+                                            limitMin = limitMin,
+                                            unit = dataModel.unit
+                                            // setCounter = if(!errorStateSetCount.value&&data.type==2) textSetCount.toLong() else setting.setCounter,
+                                            //controlMode = if(checkedStateSetCounter.value) data.id else 0
+                                        )
+                                    )
 
-                    }
+                                    if (!errorStateSetCount.value && dataModel.type == DataType.DINT.int) {
+                                        onValueChange(
+                                            ControlInfo(
+                                                id = dataModel.id,
+                                                value = textSetCount,
+                                                type = dataModel.type
+                                            )
+                                        )
+                                    }
 
+                                    if (checkedStateDeleteData.value) {
+
+                                        deleteData(dataModel.id)
+
+                                        // Log.d("HCS_TEST","delete = $checkedStateDeleteData")
+                                    }
+
+                                }
+
+                            ) {
+                                Text("OK")
+                            }
+                        },
+
+                        dismissButton = {
+                            Button(
+
+                                onClick = {
+                                    onDismiss()
+                                    //onSettingChange(DataSetting(data.id,false))
+                                }
+                                //openDialog.value = false
+                            ) {
+                                Text("CANCEL")
+                            }
+                        },
+                        //modifier = Modifier.padding(20.dp)
+                    )
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onDismiss()
-
-                        var limitMax = setting.limitMax
-
-                        when(dataModel.type){
-                            DataType.REAL.int -> {
-                                if (!errorStateMax.value) limitMax = stringLimittoFlout(textLimitMax)
-                            }
-                            DataType.BOOL.int -> {
-                                limitMax = if (checkedStateWarning_1.value) 1f else 0f
-                            }
-                            DataType.WORD.int ->{
-                                limitMax = switchRem.value.toInt(2).toFloat()// сделать проверку
-                            }
-                        }
-
-                        var limitMin = setting.limitMin
-
-                        when(dataModel.type){
-                            DataType.REAL.int -> {
-                                if (!errorStateMin.value) limitMin = stringLimittoFlout(textLimitMin)
-                            }
-                            DataType.BOOL.int -> {
-                                limitMin = if (checkedStateWarning_0.value) 1f else 0f
-                            }
-                        }
 
 
-                        onSettingChange(
-                            DataSetting(
-                            id = dataModel.id,
-                            description = dataModel.description,
-                            visible = checkedStateVisible.value,
-                            limitMode = checkedStateLimit.value,
-                            limitMax = limitMax,
-                            limitMin = limitMin,
-                            unit = dataModel.unit
-                           // setCounter = if(!errorStateSetCount.value&&data.type==2) textSetCount.toLong() else setting.setCounter,
-                            //controlMode = if(checkedStateSetCounter.value) data.id else 0
-                        )
-                        )
 
-                        if (!errorStateSetCount.value&&dataModel.type==DataType.DINT.int){
-                            onValueChange(
-                                ControlInfo(
-                                id = dataModel.id,
-                                    value = textSetCount,
-                                    type = dataModel.type
-                                ))
-                        }
 
-                        if(checkedStateDeleteData.value) {
 
-                            deleteData(dataModel.id)
 
-                            Log.d("HCS_TEST","delete = $checkedStateDeleteData")
-                        }
 
-                    }
-
-                    ) {
-                    Text("OK")
-                }
-            },
-            dismissButton = {
-                Button(
-
-                    onClick = {
-                        onDismiss()
-                        //onSettingChange(DataSetting(data.id,false))
-                    }
-                        //openDialog.value = false
-                    ) {
-                    Text("CANCEL")
-                }
-            }
-        )
-    }
+}
 
 }
 

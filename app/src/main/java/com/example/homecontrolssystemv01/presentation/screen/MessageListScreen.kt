@@ -1,13 +1,10 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.domain.enum.MessageType
-import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.message.Message
 //import com.example.homecontrolssystemv01.ui.theme.Purple700
 import com.example.homecontrolssystemv01.util.convertLongToTime
 
@@ -49,7 +46,7 @@ fun MessageScreen(
     }
 
 @Composable
-fun MessageList(modifier:Modifier,messageList:List<Message>, deleteMessage: (Int) -> Unit){
+fun MessageList(modifier:Modifier, messageList:List<Message>, deleteMessage: (Int) -> Unit){
 
     val checkedStateVisible = remember { mutableStateOf(false) }
     val completeUpdateTime = messageList.find { it.id == DataID.completeUpdate.id }?.time?:-1L

@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.domain.model
+package com.example.homecontrolssystemv01.domain.model.data
 
 data class DataModel(
 val id:Int=0,

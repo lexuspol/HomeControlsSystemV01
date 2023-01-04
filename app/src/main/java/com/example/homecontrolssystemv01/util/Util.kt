@@ -9,7 +9,9 @@ import com.example.homecontrolssystemv01.data.database.DataDao
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.enum.MessageType
-import com.example.homecontrolssystemv01.domain.model.*
+import com.example.homecontrolssystemv01.domain.model.data.DataContainer
+import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -34,7 +36,7 @@ fun createDataContainer(listData: List<DataModel>?, listSetting:List<DataSetting
 
 }
 
-fun giveDataById(listContainer: MutableList<DataContainer>,id:Int):DataContainer{
+fun giveDataById(listContainer: MutableList<DataContainer>, id:Int): DataContainer {
     val dataModelContainer = DataContainer(id,DataModel(), DataSetting())
 
     listContainer.forEach {
@@ -230,7 +232,8 @@ fun createMessageListLimit(
                                     dateTimeLong,
                                     setting.id,
                                     type = 1,
-                                    "${setting.description}. Выше ${setting.limitMax} ${setting.unit}"))
+                                    "${setting.description}. Выше ${setting.limitMax} ${setting.unit}")
+                            )
                             //Log.d("HCS_Limit", "${setting.description}. Выше ${setting.limitMax} ${setting.unit}")
                         }
 
@@ -241,7 +244,8 @@ fun createMessageListLimit(
                                 dateTimeLong,
                                 setting.id,
                                 type = 1,
-                                "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}"))
+                                "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}")
+                            )
                             //Log.d("HCS_Limit", "${setting.description}. Ниже ${setting.limitMin} ${setting.unit}")
                         }
                         }
@@ -268,7 +272,8 @@ fun createMessageListLimit(
                                 setting.id,
                                 type = 1,
                                 description = "${setting.description}. Состояние - $state."
-                            ))
+                            )
+                        )
                     }
 
 
@@ -314,7 +319,8 @@ fun createMessageListLimit(
                             createAlarmId(DataID.alarmMessage.id,index),
                             type = MessageType.ALARM.int,
                             description = alarmMessageDescription[index]
-                        ))
+                        )
+                    )
                 }
             }
         }else {
@@ -325,7 +331,8 @@ fun createMessageListLimit(
                     DataID.alarmMessage.id,
                     type = MessageType.WARNING.int,
                     description = alarmMessageDescription.last()
-                ))
+                )
+            )
         }
 
     }
@@ -339,7 +346,8 @@ fun createMessageListLimit(
             DataID.completeUpdate.id,
             MessageType.SYSTEM.int,
             description = DataID.completeUpdate.name + " OK"
-        ))
+        )
+    )
 
     return listMessage
     }
