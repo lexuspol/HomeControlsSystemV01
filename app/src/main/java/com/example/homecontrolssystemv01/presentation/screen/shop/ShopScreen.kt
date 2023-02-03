@@ -18,29 +18,13 @@ import com.example.homecontrolssystemv01.presentation.ShopViewModel
 @Composable
 fun ShopScreen(
     viewModel: ShopViewModel,
-    pressOnBack: () -> Unit = {}){
+    pressOnBack: () -> Unit = {}
+) {
 
-    //val shopPublicList = remember {viewModel.getPublicShopListUI() }
-    //val shopPersonalList = remember {viewModel.getPersonaShopListUI() }
-
-    //var add by remember { mutableStateOf(false)   }
-
-//    val shopPersonalList = remember {
-//        viewModel.getPersonaShopListUI().collectAsState(initial = emptyList())
-//    }
-
-    //val flow = viewModel.getPersonaShopListUI()
-
-    //val shopPersonalList = viewModel.getPersonaShopListUI().collectAsState(initial = emptyList())
-
-    LaunchedEffect(Unit){
+    LaunchedEffect(Unit) {
         viewModel.getPublicShopListUI()
         viewModel.getPersonalShopListUI()
     }
-
-
-
-    //Log.d("HCS","shopPersonalList")
 
     val selectedTab = ShopScreenTab.getTabFromResource(viewModel.selectedTabShop.value)
     val tabs = ShopScreenTab.values()
@@ -51,8 +35,6 @@ fun ShopScreen(
         backgroundColor = MaterialTheme.colors.primarySurface,
         bottomBar = {
             BottomNavigation(
-                //backgroundColor = Mate,
-
             ) {
                 tabs.forEach { tab ->
                     val color = LocalContentColor.current
@@ -63,12 +45,11 @@ fun ShopScreen(
                         onClick = { viewModel.selectTabShop(tab.title) },
                         //selectedContentColor = MaterialTheme.colors.background,
                         //unselectedContentColor = color,
-
-                        )
+                    )
                 }
             }
         },
-    ) {innerPadding ->
+    ) { innerPadding ->
         val modifier = Modifier
             .padding(innerPadding)
             .fillMaxHeight()
@@ -78,31 +59,27 @@ fun ShopScreen(
                 ShopScreenTab.PUBLIC -> ShopItemsScreen(
                     route = NavShopScreen.ShopPublicScreen.route,
                     shopList = viewModel.shopPublicList,
-                    putItem = {viewModel.putPublicShopItemUI(it)},
-                    deleteItem ={viewModel.deletePublicShopItemUI(it)}
-                ){pressOnBack()}
+                    putItem = { viewModel.putPublicShopItemUI(it) },
+                    deleteItem = { viewModel.deletePublicShopItemUI(it) }
+                ) { pressOnBack() }
 
                 ShopScreenTab.PERSONAL -> ShopItemsScreen(
                     route = NavShopScreen.ShopPersonalScreen.route,
                     shopList = viewModel.shopPersonalList,
-                    putItem = {viewModel.putPersonaShopItemUI(it) },
-                    deleteItem ={viewModel.deletePersonaShopItemUI(it)}
-                ){pressOnBack()}
+                    putItem = { viewModel.putPersonaShopItemUI(it) },
+                    deleteItem = { viewModel.deletePersonaShopItemUI(it) }
+                ) { pressOnBack() }
 
                 ShopScreenTab.NOTES -> ShopNotesScreen()
             }
         }
 
     }
-
-
-
-
 }
 
 @Preview(showBackground = true)
 @Composable
-fun TestPreviewShop(){
+fun TestPreviewShop() {
 
 }
 

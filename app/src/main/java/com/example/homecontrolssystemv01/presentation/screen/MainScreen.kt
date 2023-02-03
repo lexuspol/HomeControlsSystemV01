@@ -19,12 +19,10 @@ fun MainScreen(viewModel: MainViewModel, shopViewModel: ShopViewModel) {
     val resourcesDataMapUI = viewModel.getResourcesDataMapUI()
 
     val dataList = viewModel.getDataListUI().observeAsState().value
-    //val shopList = viewModel.getShopListUI()
-    //val logList = viewModel.getLogListUI().value
 
     val connectSetting = viewModel.getConnectSettingUI()
     val systemSetting = viewModel.getSystemSettingUI()
-    //val loggingSetting = viewModel.getLoggingSetting()
+
 
 
     val navController = rememberNavController()
@@ -44,14 +42,6 @@ fun MainScreen(viewModel: MainViewModel, shopViewModel: ShopViewModel) {
                 navController.navigateUp()}
         }
 
-//        composable(NavScreen.ShopScreen.route) {
-//            ShopPublicScreen(
-//                shopList,
-//                addItem = {viewModel.addShopItemUI(it)},
-//                deleteItem = {viewModel.deleteShopItemUI(it)}
-//            ){navController.navigateUp()}
-//        }
-
         composable(NavScreen.LoggingScreen.route) {
             LoggingScreen(
                 resourcesDataMapUI,
@@ -63,7 +53,6 @@ fun MainScreen(viewModel: MainViewModel, shopViewModel: ShopViewModel) {
             ) { navController.navigateUp() }
         }
 
-
             composable(NavScreen.SettingScreen.route) {
                 SettingScreen(connectSetting,systemSetting,dataList,
                     //getLoggingSetting = {viewModel.getLoggingSetting()},
@@ -73,8 +62,6 @@ fun MainScreen(viewModel: MainViewModel, shopViewModel: ShopViewModel) {
                     onControl = {viewModel.putControlUI(it)}
                 ){navController.navigateUp()}
             }
-
-
 
         }
 }

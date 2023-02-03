@@ -23,7 +23,6 @@ import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.setting.LogSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
-import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
 import com.example.homecontrolssystemv01.domain.useCase.*
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -54,7 +53,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private var _connectSetting = ConnectSetting()
     private var _systemSetting = SystemSetting()
-   // private val _listLogSetting = mutableListOf<LogSetting>()
 
 
 
@@ -101,12 +99,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
 
     //без юскейса
-    fun getShopListUI(): SnapshotStateList<ShopItem> {
-        return repository.getShopList()
-    }
-//    fun getLogListUI(id:Int):MutableState<List<LogItem>> {
-//        return repository.getLogList(id)
-//    }
 
     fun getLogMapUI(idKey:String):MutableState<Map<String, LogItem>> {
         return repository.getLogMap(idKey)
@@ -120,17 +112,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         repository.deleteLogItem(idKey)
     }
 
-    //////
-
-    fun addShopItemUI(item:ShopItem){
-        repository.addShopItem(item)
-    }
-
-    fun deleteShopItemUI(id: Int){
-        repository.deleteItem(id)
-    }
-
-
+//////
 
     fun getMessageListUI(): LiveData<List<Message>> {
         val messageList = getMessageList()
@@ -194,13 +176,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-//    fun setLoggingSetting(logSetting: LogSetting){
-//        with(sharedPref.edit()) {
-//            putInt(logSetting.logKey,logSetting.logId)
-//            apply()
-//        }
-//    }
-
     private fun getLoggingSetting():List<LogSetting>{
        // Log.d("HCS","fun getLoggingSetting()")
         val listLogSetting = mutableListOf<LogSetting>()
@@ -223,13 +198,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private val _selectedTab: MutableState<Int> = mutableStateOf(0)
     val selectedTab: State<Int> get() = _selectedTab
-
     fun selectTab(@StringRes tab: Int) {_selectedTab.value = tab}
-
-    private val _selectedTabShop: MutableState<Int> = mutableStateOf(0)
-    val selectedTabShop: State<Int> get() = _selectedTabShop
-    fun selectTabShop(@StringRes tab: Int) {_selectedTabShop.value = tab}
-
 
     init {
         readPref()

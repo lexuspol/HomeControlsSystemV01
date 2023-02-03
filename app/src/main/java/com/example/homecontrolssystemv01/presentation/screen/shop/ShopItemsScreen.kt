@@ -77,16 +77,6 @@ fun getNextId(shopList: List<ShopDbModel>?):Int{
             }
         }
 
-//        run outer@{
-//            shopList.forEachIndexed { index, shopItem ->
-//                if (index != shopItem.itemId) {
-//                    i = index
-//                    return@outer
-//                }
-//                i = index + 1
-//            }
-//        }
-
         return i
     }else return 0
 
@@ -107,7 +97,6 @@ fun ShopItemRow(route:String, shopItem: ShopDbModel,addItem:(ShopDbModel)-> Unit
     val colorBorder = if (shopItem.enabled) Color.White else MaterialTheme.colors.background
     val colorCard = if (shopItem.enabled) MaterialTheme.colors.background else MaterialTheme.colors.primarySurface
 
-
     Card(
         modifier = Modifier
             .padding(10.dp, 5.dp)
@@ -126,7 +115,6 @@ fun ShopItemRow(route:String, shopItem: ShopDbModel,addItem:(ShopDbModel)-> Unit
         //         .height(50.dp),
         shape = RoundedCornerShape(8.dp), elevation = 4.dp,
        border = BorderStroke(1.dp, colorBorder),
-
         //contentColor = Purple500,
         backgroundColor = colorCard
     ) {
@@ -149,17 +137,11 @@ fun ShopAlertDialog(route: String,
                     addItem:(ShopDbModel)-> Unit,deleteItem: (Int) -> Unit,
                     item:ShopDbModel = ShopDbModel() ){
 
-
     val stringList = stringArrayResource(id = when (route){
         NavShopScreen.ShopPublicScreen.route-> R.array.shopPublicGroup
         NavShopScreen.ShopPersonalScreen.route-> R.array.shopPersonalGroup
         else -> R.array.shopPublicGroup
     })
-
-//        listOf("1. Мучное, сладкое","2. Химия","3. Крупы, приправы","4. Фрукты, овощи",
-//                            "5. Мясо, рыба","6. Молочка","7. Вода")
-
-    //Log.d("HCS","ShopPublicScreen init $nextId")
 
     var groupId by remember { mutableStateOf(item.groupId) }
 
@@ -168,8 +150,6 @@ fun ShopAlertDialog(route: String,
     var textItem by remember { mutableStateOf(item.itemName) }
     var textCount by remember { mutableStateOf(item.countString) }
     var textSection by remember { mutableStateOf(section) }
-
-
 
     var mExpanded by remember { mutableStateOf(false) }
     var mTextFieldSizeSection by remember { mutableStateOf(Size.Zero)}
@@ -235,7 +215,6 @@ fun ShopAlertDialog(route: String,
                             textSection = map
                             mExpanded = false
                             groupId = index+1
-                           // setLoggingSetting(LogSetting(map.key,logSetting.logKey,logType))
                         }) {
                             Text(text = map)
                         }
@@ -272,7 +251,6 @@ fun ShopAlertDialog(route: String,
         },
         confirmButton = {
         }
-       // backgroundColor =
         )
 }
 
@@ -307,6 +285,5 @@ fun AppBarShop(route:String,onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
 @Preview(showBackground = true)
 @Composable
 fun ShopTestPreview(){
-   // ShopAlertDialog(nextId = 1, onDismiss = { /*TODO*/ }, addItem = { /*TODO*/ }, deleteItem ={ /*TODO*/ } )
 }
 
