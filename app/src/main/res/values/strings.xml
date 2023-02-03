@@ -1,11 +1,25 @@
 <resources>
     <string name="app_name">Home Control System</string>
+
     <string name="menu_home">DATA</string>
     <string name="menu_message">MESSAGE</string>
     <string name="menu_control">CONTROL</string>
+
+    <string name="menu_shop_public">PUBLIC</string>
+    <string name="menu_shop_personal">PERSONAL</string>
+    <string name="menu_shop_notes">NOTES</string>
+
+
+
     <string name="setting">Setting</string>
-    <string name="shop">ShopList</string>
+    <string name="shop">Список покупок</string>
+    <string name="shop_personal">Личный список</string>
+    <string name="shop_public">Общий список</string>
+    <string name="logging">Logging</string>
     <string name="data_format">yyyy-MM-dd HH:mm:ss</string>
+    <string name="minValue">Минимальное значение</string>
+    <string name="maxValue">Максимальное значение</string>
+    <string name="averageValue">Среднее значение</string>
 
     <string-array name="data">
 
@@ -46,6 +60,7 @@
         <item>121|Энергия за месяц^  кВт</item>
         <item>122|Энергия за прошлый месяц^  кВт</item>
         <item>123|Расход энергии^  Вт/ч</item>
+        <item>124|Температура в доме^  С</item>
 
         <item>199|Уровень батареи^  %</item>
 
@@ -128,6 +143,24 @@
         <item>Аварийное сообщение 15</item>
         <item>Ошибка формата аварийного сообщения</item>
 
+    </string-array>
+    <string-array name="shopPublicGroup">
+        <item>1. Мучное, сладкое</item>
+        <item>2. Химия</item>
+        <item>3. Крупы, приправы</item>
+        <item>4. Фрукты, овощи</item>
+        <item>5. Мясо, рыба</item>
+        <item>6. Молочка</item>
+        <item>7. Вода</item>
+    </string-array>
+    <string-array name="shopPersonalGroup">
+        <item>1. Продукты</item>
+        <item>2. Аптека</item>
+        <item>3. Одежда</item>
+        <item>4. Мебель</item>
+        <item>5. Техника</item>
+        <item>6. Строительный</item>
+        <item>7. Разное</item>
     </string-array>
 
 </resources>

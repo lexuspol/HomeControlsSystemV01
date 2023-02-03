@@ -5,6 +5,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.LiveData
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.logging.LogItem
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
@@ -35,6 +36,9 @@ interface DataRepository {
    suspend fun deleteData(id:Int)
 
    fun getShopList(): SnapshotStateList<ShopItem>
+   fun getLogMap(idKey:String): MutableState<Map<String, LogItem>>
+   fun getLogIdList(): MutableState<List<String>>
+   fun deleteLogItem(idKey:String)
 
    fun addShopItem(item: ShopItem)
    fun deleteItem(id:Int)

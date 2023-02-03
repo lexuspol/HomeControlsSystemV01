@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataContainer

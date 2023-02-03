@@ -5,5 +5,6 @@ data class ConnectSetting(
     var ssid:String = "NO_WIFI",
     var serverMode:Boolean = false,
     var cycleMode:Boolean = false,
+    var listLogSetting: List<LogSetting> = listOf()
 
 )

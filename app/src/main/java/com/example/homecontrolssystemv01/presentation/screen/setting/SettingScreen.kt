@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,22 +9,29 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
+import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
 import com.example.homecontrolssystemv01.domain.enum.ControlValue
+import com.example.homecontrolssystemv01.domain.enum.LogKey
+import com.example.homecontrolssystemv01.domain.enum.LoggingType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
 import com.example.homecontrolssystemv01.domain.model.message.ModeConnect
-import com.example.homecontrolssystemv01.presentation.RadioButtonList
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
+import com.example.homecontrolssystemv01.domain.model.setting.LogSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 
 
@@ -32,8 +40,11 @@ fun SettingScreen(
     connectSetting: ConnectSetting,
     systemSetting: SystemSetting,
     dataList:List<DataModel>?,
+    //listLogSetting:List<LogSetting>,
+    //getLoggingSetting:() -> List<LogSetting>,
     setConnectSetting: (ConnectSetting) -> Unit,
     setSystemSetting: (SystemSetting) -> Unit,
+    //setLoggingSetting: (LogSetting) -> Unit,
     onControl: (ControlInfo) -> Unit,
     pressOnBack: () -> Unit = {}
 ){
@@ -47,10 +58,24 @@ fun SettingScreen(
     var stateSoundOff = ""
     var stateSoundOffUnit = ""
 
+    //val listLoggingSetting = getLoggingSetting()
+    val listLoggingSetting = connectSetting.listLogSetting
+
+    val mapDataForLog = mutableMapOf<Int,String>()
+
+    val lastIndexData = 999
+
     if (!dataList.isNullOrEmpty()){
 
-
         dataList.forEach { dataModel->
+
+            if (dataModel.id in 0..lastIndexData){
+                if(dataModel.description==""){
+                    mapDataForLog[dataModel.id] = dataModel.name.toString()
+                }else {
+                    mapDataForLog[dataModel.id] = dataModel.description
+                }
+            }
 
             when(dataModel.id){
                 DataID.SSID.id -> ssid = dataModel.value.toString()
@@ -70,6 +95,8 @@ fun SettingScreen(
     }
 
     var enableControl = connectMode== ModeConnect.LOCAL.name
+
+    //var loggingItemEnable by remember { mutableStateOf(!con) }
 
 
     Scaffold (
@@ -180,11 +207,14 @@ fun SettingScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
 
-                            val checkedState = remember { mutableStateOf(connectSetting.serverMode) }
+                            val checkedState =
+                                remember { mutableStateOf(connectSetting.serverMode) }
 
-                            Text(text = "Запись данных на удаленный сервер",
+                            Text(
+                                text = "Запись данных на удаленный сервер",
                                 Modifier.weight(4f),
-                                style = MaterialTheme.typography.body1)
+                                style = MaterialTheme.typography.body1
+                            )
 
                             Switch(
                                 checked = checkedState.value,
@@ -209,9 +239,11 @@ fun SettingScreen(
 
                             val checkedState = remember { mutableStateOf(connectSetting.cycleMode) }
 
-                            Text(text = "Циклическое обновление локальных данных",
+                            Text(
+                                text = "Циклическое обновление локальных данных",
                                 Modifier.weight(4f),
-                                style = MaterialTheme.typography.body1)
+                                style = MaterialTheme.typography.body1
+                            )
 
                             Switch(
 
@@ -234,11 +266,14 @@ fun SettingScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
 
-                            val checkedStateShowDetail = remember { mutableStateOf(systemSetting.showDetails) }
+                            val checkedStateShowDetail =
+                                remember { mutableStateOf(systemSetting.showDetails) }
 
-                            Text(text = "Отображение детальной информации",
+                            Text(
+                                text = "Отображение детальной информации",
                                 Modifier.weight(4f),
-                                style = MaterialTheme.typography.body1)
+                                style = MaterialTheme.typography.body1
+                            )
 
                             Switch(
                                 checked = checkedStateShowDetail.value,
@@ -253,7 +288,8 @@ fun SettingScreen(
                         }
                     }
                 }
-
+            }
+            item{
                 CardSettingElement {
                     Row(
                         Modifier
@@ -267,16 +303,22 @@ fun SettingScreen(
 
 
 
-                        Text(text = "Отключить звуковое оповещение",
+                        Text(
+                            text = "Отключить звуковое оповещение",
                             Modifier.weight(4f),
-                            style = MaterialTheme.typography.body1)
+                            style = MaterialTheme.typography.body1
+                        )
 
                         Switch(
-                            checked = stateOff ,
+                            checked = stateOff,
                             onCheckedChange = {
-                                    onControl(ControlInfo(DataID.buttonSoundOff.id,
-                                        if (stateOff) ControlValue.SOUND_ON.value else ControlValue.SOUND_OFF.value))
-                            //    enableControl = false
+                                onControl(
+                                    ControlInfo(
+                                        DataID.buttonSoundOff.id,
+                                        if (stateOff) ControlValue.SOUND_ON.value else ControlValue.SOUND_OFF.value
+                                    )
+                                )
+                                //    enableControl = false
 
                             },
                             Modifier.weight(1f),
@@ -287,9 +329,32 @@ fun SettingScreen(
                 }
             }
 
+            item { CardSettingElement {
+                Column {
+                    listLoggingSetting.forEach {
+                        MyDropDownMenu(connectSetting.serverMode,it, mapDataForLog.toMap(),
+                            setLoggingSetting ={fromMenu->
+                            connectSetting.listLogSetting.map { logSetting->
+
+                                if (logSetting.logKey==fromMenu.logKey){
+                                    logSetting.logId = fromMenu.logId
+                                }
+
+
+                            }
+                        })
+                    }
+                }
+            } }
 
 
 
+
+//                items(listLoggingSetting) {
+//                    CardSettingElement {
+//                    MyDropDownMenu(it, mapDataForLog.toMap(), setLoggingSetting)
+//                }
+//            }
             }
 
         }
@@ -319,50 +384,92 @@ fun MyListData(listData:List<DataModel>) {
 
 
 
+// Creating a composable function
+// to create an Outlined Text Field
+// Calling this function as content
+// in the above function
 @Composable
-fun MyRadioButton (radioButtonList: RadioButtonList,
-                   connectSetting: ConnectSetting,
-                   onValueChange: (ConnectSetting) -> Unit){
-
-    val (selectedOption, onOptionSelected) = remember {
-        mutableStateOf(radioButtonList.list[radioButtonList.index])
+fun MyDropDownMenu(
+    //dataList:List<DataModel>,
+    serverMode:Boolean,
+    logSetting:LogSetting,
+    mapData:Map<Int,String>,
+    setLoggingSetting: (LogSetting) -> Unit,
+){
+    val logType = try {
+        LogKey.valueOf(logSetting.logKey).type
+    }catch (e:Exception){
+        LoggingType.UNDEFINED
     }
-    Column(
-//        Modifier.selectableGroup()
-    ) {
-        radioButtonList.list.forEach { text ->
-            Row(
-                Modifier
-                    //.fillMaxWidth()
-                    .height(56.dp)
-                    .selectable(
-                        selected = (text == selectedOption),
-                        onClick = {
-                            onOptionSelected(text)
-                            connectSetting.ssid = text
-                            onValueChange(connectSetting)
-                        },
-                        role = Role.RadioButton
-                    )
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = (text == selectedOption),
-                    onClick = null
-                    // null recommended for accessibility with screenreaders
-                )
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.body1.merge(),
-                    modifier = Modifier.padding(start = 16.dp)
-                )
+
+    val nameLogging = when(logType){
+        LoggingType.LOGGING_PERIODIC -> "Logging"
+        LoggingType.LOGGING_ONE_DAY -> "LoggingLastDay"
+        else -> "NotType"
+    }
+
+    // Declaring a boolean value to store
+    // the expanded state of the Text Field
+    var mExpanded by remember { mutableStateOf(false) }
+
+    // Create a list of cities
+   // val list = listOf("Delhi", "Mumbai", "Chennai", "Kolkata", "Hyderabad", "Bengaluru", "Pune")
+
+    // Create a string value to store the selected city
+    //val valueSelectedText = if (logSetting.logId=0) "" else logSetting.logKey
+    var mSelectedText by remember { mutableStateOf(mapData[logSetting.logId] ?:"") }
+
+    var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
+
+    // Up Icon when expanded and down icon when collapsed
+    val icon = if (mExpanded)
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+
+    Column(Modifier.padding(10.dp)) {
+
+        // Create an Outlined Text Field
+        // with icon and not expanded
+        OutlinedTextField(
+            value = mSelectedText,
+            onValueChange = {
+                mSelectedText = it
+                            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    // This value is used to assign to
+                    // the DropDown the same width
+                    mTextFieldSize = coordinates.size.toSize()
+                },
+            enabled = !serverMode,
+            label = {Text(nameLogging)},
+            trailingIcon = {
+                Icon(icon,"contentDescription",
+                    Modifier.clickable { mExpanded = !mExpanded })
+            }
+        )
+
+        // Create a drop-down menu with list of cities,
+        // when clicked, set the Text Field text as the city selected
+        DropdownMenu(
+            expanded = mExpanded,
+            onDismissRequest = { mExpanded = false },
+            modifier = Modifier
+                .width(with(LocalDensity.current){mTextFieldSize.width.toDp()})
+        ) {
+            mapData.forEach { map ->
+                DropdownMenuItem(onClick = {
+                    mSelectedText = map.value
+                    mExpanded = false
+                    setLoggingSetting(LogSetting(map.key,logSetting.logKey,logType))
+                }) {
+                    Text(text = map.value)
+                }
             }
         }
-
-
     }
-
 }
 
 @Composable

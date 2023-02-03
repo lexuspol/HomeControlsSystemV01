@@ -3,6 +3,7 @@ package com.example.homecontrolssystemv01.data.repository
 import android.app.Application
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +19,7 @@ import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.logging.LogItem
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
@@ -51,7 +53,12 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
     private val myRef = Firebase.database(FIREBASE_URL)//.getReference(FIREBASE_PATH)
     private var addRemoteListener = false
 
+    private var addLogListener = false
+    private var addLogListenerId = ""
+
     private val shopListMSL = mutableStateListOf(ShopItem())
+    private val logMapMS = mutableStateOf<Map<String,LogItem>>(mapOf())
+    private val logIdListMS = mutableStateOf<List<String>>(listOf())
 
     //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
     //запускаем слушателя в loadData
@@ -60,9 +67,8 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
 
             val dataFirebaseID = snapshot.child("id").getValue<Int>()?:0
             val dataFirebaseValue = snapshot.child("value").getValue<String>()?:"0"
-
                 if (dataFirebaseID != 0){
-                   Log.d("HCS_FIREBASE", "start worker value = $dataFirebaseValue")
+                  // Log.d("HCS_FIREBASE", "start worker value = $dataFirebaseValue")
                     putControl(ControlInfo(dataFirebaseID,dataFirebaseValue,0,true))
                     removeValueControlRemote()
                 }
@@ -101,6 +107,122 @@ class MainRepositoryImpl (private val application: Application): DataRepository 
         }
     }
 
+//    private val logEventListener: ValueEventListener = object : ValueEventListener {
+//        override fun onDataChange(snapshot: DataSnapshot) {
+//
+//            try {
+//                val keySnapshot = snapshot.key.toString()
+//
+//                //Log.d("HCS","snapshot.key = ${snapshot.key}")
+//
+//                val valueLog = snapshot.getValue<Map<String,String>>()
+//
+//                if (!valueLog.isNullOrEmpty()){
+//
+//                    val valueList = mutableListOf<Pair<Long,String>>()
+//                    val logMap = mutableMapOf<String,LogItem>()
+//
+//                    valueLog.forEach { map->
+//
+//                        try {
+//                            valueList.add(Pair(map.key.toLong(),map.value))
+//                        }catch (e:Exception){
+//                            Log.w("HCS_FIREBASE_ERROR", "Error cast long value", e)
+//                        }
+//                    }
+//
+//                    valueList.sortByDescending { it.first }
+//                    logMap[keySnapshot] = LogItem(valueList.toList())
+//                    logMapMS.value = logMap.toMap()
+//                }
+//
+//            }catch (e:Exception){
+//                Toast.makeText(application, "Remote base error", Toast.LENGTH_LONG).show()
+//            }
+//        }
+//
+//        override fun onCancelled(error: DatabaseError) {
+//            // Failed to read value
+//            Log.w("HCS_FIREBASE_ERROR", "Failed to read shop value.", error.toException())
+//        }
+//    }
+//
+//    private val logIdEventListener: ValueEventListener = object : ValueEventListener {
+//        override fun onDataChange(snapshot: DataSnapshot) {
+//
+//            val listIndex = mutableListOf<String>()
+//
+//            snapshot.children.forEach {id->
+//                val idLog = id.key
+//                if (idLog != null){
+//                    listIndex.add(idLog)
+//                }
+//            }
+//
+//            logIdListMS.value = listIndex.toList()
+//
+//        }
+//
+//        override fun onCancelled(error: DatabaseError) {
+//            // Failed to read value
+//            Log.w("HCS_FIREBASE_ERROR", "Failed to read shop value.", error.toException())
+//        }
+//    }
+
+
+    private fun getEventListener(key:String):ValueEventListener{
+        return object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                try {
+                    when(key){
+                        "id" -> readLogIdList(snapshot)
+                        "value" -> readLogValue(snapshot)
+                    }
+                }catch (e:Exception){
+                    Toast.makeText(application, "Remote base error", Toast.LENGTH_LONG).show()
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                // Failed to read value
+                Log.w("HCS_FIREBASE_ERROR", "Failed to read value.", error.toException())
+            }
+        }
+    }
+
+    fun readLogIdList(snapshot: DataSnapshot){
+        val listIndex = mutableListOf<String>()
+        snapshot.children.forEach {id->
+            val idLog = id.key
+            if (idLog != null){
+                listIndex.add(idLog)
+            }
+        }
+        logIdListMS.value = listIndex.toList()
+    }
+
+    fun readLogValue(snapshot: DataSnapshot){
+        val keySnapshot = snapshot.key.toString()
+        //Log.d("HCS","snapshot.key = ${snapshot.key}")
+       val valueLog = snapshot.getValue<Map<String,String>>()
+
+        if (!valueLog.isNullOrEmpty()){
+            val valueList = mutableListOf<Pair<Long,String>>()
+            val logMap = mutableMapOf<String,LogItem>()
+            valueLog.forEach { map->
+                try {
+                    valueList.add(Pair(map.key.toLong(),map.value))
+                }catch (e:Exception){
+                    Log.w("HCS_FIREBASE_ERROR", "Error cast long value", e)
+                }
+            }
+            valueList.sortByDescending { it.first }
+            logMap[keySnapshot] = LogItem(valueList.toList())
+            logMapMS.value = logMap.toMap()
+        }
+    }
+
+
+
 override fun getDataList(): LiveData<List<DataModel>> {
     return Transformations.map(dataDao.getValueList()) { list ->
         list.map {
@@ -135,6 +257,30 @@ override fun getDataList(): LiveData<List<DataModel>> {
         return shopListMSL
     }
 
+
+
+    override fun getLogMap(idKey: String): MutableState<Map<String, LogItem>> {
+        Log.d("HCS","fun getLogMap")
+        if (addLogListener && idKey !="" && addLogListenerId != idKey){
+            myRef.getReference(FIREBASE_PATH_LOG).child(idKey).addListenerForSingleValueEvent(getEventListener("value"))
+
+            addLogListenerId = idKey
+            addLogListener = true
+        }
+        return logMapMS
+    }
+
+    override fun getLogIdList(): MutableState<List<String>> {
+        //myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(logIdEventListener)
+        myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(getEventListener("id"))
+        Log.d("HCS","fun getLogIdList()")
+        return logIdListMS
+    }
+
+    override fun deleteLogItem(idKey: String) {
+        myRef.getReference(FIREBASE_PATH_LOG).child(idKey).removeValue()
+    }
+
     override fun addShopItem(item: ShopItem) {
         myRef.getReference(FIREBASE_PATH_SHOP).child(item.itemId.toString()).setValue(item)
     }
@@ -157,18 +303,25 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
         _connectSetting = connectSetting
 
+      //  Log.d("HCS","listLogSetting = ${connectSetting.listLogSetting}")
+
         startRefreshDataWorker(_connectSetting.ssid,0,"0",_connectSetting.cycleMode,false)
 
         if(_connectSetting.serverMode){
-            startPeriodicDataWorker(_connectSetting.ssid)
+            startPeriodicDataWorker()
 
             if (addRemoteListener){
 
-                //удаляем так как может весеть команда
+                //удаляем чтобы не весела команда
                 removeValueControlRemote()
 
+                //любое устройство в режиме сервера устанавливает слушателя,
+                //и при удаленном управлении запускает воркер
+                //но в воркере прверка на главное устройство
+                //только главное устройство может записать команду в контроллер
+
                 myRef.getReference(FIREBASE_PATH_CONTROL).addValueEventListener(valueEventListener)
-                Log.d("HCS","addListener")
+                //Log.d("HCS","addListener")
 
                 addRemoteListener = false
             }
@@ -199,11 +352,11 @@ override fun getDataList(): LiveData<List<DataModel>> {
         }
     }
 
-    private fun startPeriodicDataWorker(ssidSetting:String){
+    private fun startPeriodicDataWorker(){
             workManager.enqueueUniquePeriodicWork(
                 PeriodicDataWorker.NAME_PERIODIC,
                 ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicDataWorker.makeRequestPeriodic(ssidSetting,infoDevice)
+                PeriodicDataWorker.makeRequestPeriodic(_connectSetting.ssid,infoDevice,_connectSetting.listLogSetting)
             )
     }
 
@@ -236,8 +389,9 @@ override fun getDataList(): LiveData<List<DataModel>> {
 
     init {
         addRemoteListener = true// разобраться нужно ли это делать тут или сразу объявить в поле
+        addLogListener = true
 
-        myRef.getReference(FIREBASE_PATH_SHOP).addValueEventListener(shopEventListener)
+        //myRef.getReference(FIREBASE_PATH_SHOP).addValueEventListener(shopEventListener)
     }
 
     companion object{
@@ -246,6 +400,7 @@ override fun getDataList(): LiveData<List<DataModel>> {
         const val FIREBASE_PATH = "data"
         const val FIREBASE_PATH_CONTROL = "controlRemove"
         const val FIREBASE_PATH_SHOP = "shop"
+        const val FIREBASE_PATH_LOG = "logging"
     }
 
 }

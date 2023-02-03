@@ -1,6 +1,5 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataContainer
@@ -97,15 +98,15 @@ fun LazyColumnCreate(
 
                     if (allList){
                         if (showDetails) {
-                            DataRow(modifier,container,onSettingChange,onControl,deleteData,true)
+                            DataRow(modifier,container,allList,onSettingChange,onControl,deleteData,true)
                         }else {
                             if (container.id in 0..lastIndexData) {
-                                DataRow(modifier,container,onSettingChange,onControl,deleteData)
+                                DataRow(modifier,container,allList,onSettingChange,onControl,deleteData)
                             }
                         }
                     }else{
                         if (container.setting.visible) {
-                            DataRow(modifier,container,onSettingChange,onControl,deleteData)
+                            DataRow(modifier,container,allList,onSettingChange,onControl,deleteData)
                         }
 
                     }
@@ -163,6 +164,7 @@ fun LazyColumnCreate(
 fun DataRow(
     modifier:Modifier,
     dataContainer: DataContainer,
+    allList:Boolean,
     onSettingChange: (DataSetting) -> Unit,
     onValueChange: (ControlInfo) -> Unit,
     deleteData: (Int) ->Unit,
@@ -173,7 +175,7 @@ fun DataRow(
 
     val showDialog = remember { mutableStateOf(false)}
 
-    val colorBorder = if (setting.visible || setting.limitMode) Color.Yellow else MaterialTheme.colors.background
+   // val colorBorder = if (setting.visible || setting.limitMode) Color.Yellow else MaterialTheme.colors.background
 
     Card(
         modifier = Modifier
@@ -182,7 +184,7 @@ fun DataRow(
             // .background(Purple500)
    //         .height(50.dp),
         shape = RoundedCornerShape(8.dp), elevation = 4.dp,
-        border = BorderStroke(1.dp, colorBorder)
+        //border = BorderStroke(1.dp, colorBorder)
 
         //contentColor = Purple500,
         //backgroundColor = Purple500
@@ -213,18 +215,34 @@ fun DataRow(
                 Row(
                     Modifier
                         .fillMaxWidth()
+
                 ) {
-                    Text(
-                        text = data.description,
-                        modifier = Modifier.weight(4f),
-                        style = MaterialTheme.typography.subtitle1,
-                        //color = if (setting.visible) Color.Yellow else Color.White
-                    )
+                    Box(modifier = Modifier.weight(4f)){
+
+                        Row() {
+                            if (allList && setting.limitMode){
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                )
+                            }
+
+                            Text(
+                                text = data.description,
+
+                                style = MaterialTheme.typography.subtitle1,
+                                //color = if (setting.visible) Color.Yellow else Color.White
+                            )
+                        }
+
+
+                    }
+
                     Text(
                         text = when(data.type){
-                            DataType.STRING.int -> "  "
-                            DataType.DTL.int -> "  "
-                            DataType.WORD.int -> "  "
+                            DataType.STRING.dataTypeNumber -> "  "
+                            DataType.DTL.dataTypeNumber -> "  "
+                            DataType.WORD.dataTypeNumber -> "  "
                             else -> data.value.toString()
                         },
                         modifier = Modifier.weight(2f),
@@ -234,7 +252,7 @@ fun DataRow(
                        // color = if (setting.limitMode) Color.Yellow else Color.White
                     )
                     Text(
-                        text = if (data.type!=DataType.BOOL.int) data.unit else "  ",
+                        text = if (data.type!=DataType.BOOL.dataTypeNumber) data.unit else "  ",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.subtitle1,
                        // color = if (setting.limitMode) Color.Yellow else Color.White
@@ -242,9 +260,9 @@ fun DataRow(
 
 
                 }
-                if (data.type == DataType.STRING.int||
-                    data.type == DataType.DTL.int||
-                    data.type == DataType.WORD.int)  {
+                if (data.type == DataType.STRING.dataTypeNumber||
+                    data.type == DataType.DTL.dataTypeNumber||
+                    data.type == DataType.WORD.dataTypeNumber)  {
                     Row(){
                         Text(
                             text = data.value.toString(),
@@ -318,9 +336,9 @@ private fun MyAlertDialog(
 
                         title = {
 
-                            if (dataModel.type == DataType.STRING.int ||
-                                dataModel.type == DataType.DTL.int ||
-                                dataModel.type == DataType.WORD.int
+                            if (dataModel.type == DataType.STRING.dataTypeNumber ||
+                                dataModel.type == DataType.DTL.dataTypeNumber ||
+                                dataModel.type == DataType.WORD.dataTypeNumber
                             ) {
                                 Column() {
                                     Text(text = dataModel.description)
@@ -335,7 +353,7 @@ private fun MyAlertDialog(
                                 ) {
                                     Text(text = dataModel.description)
                                     Text(text = dataModel.value.toString())
-                                    Text(text = if (dataModel.type != DataType.BOOL.int) dataModel.unit else "  ")
+                                    Text(text = if (dataModel.type != DataType.BOOL.dataTypeNumber) dataModel.unit else "  ")
                                 }
                             }
 
@@ -395,7 +413,7 @@ private fun MyAlertDialog(
                                     )
                                 }
 
-                                if (dataModel.type == DataType.BOOL.int) {
+                                if (dataModel.type == DataType.BOOL.dataTypeNumber) {
 
                                     Row() {
                                         Switch(checked = checkedStateLimit.value, onCheckedChange = {
@@ -438,7 +456,7 @@ private fun MyAlertDialog(
 
 
 
-                                if (dataModel.type == DataType.REAL.int) {
+                                if (dataModel.type == DataType.REAL.dataTypeNumber) {
                                     Row() {
                                         Switch(checked = checkedStateLimit.value, onCheckedChange = {
                                             checkedStateLimit.value = it
@@ -484,7 +502,7 @@ private fun MyAlertDialog(
                                         }
                                     )
                                 }
-                                if (dataModel.type == DataType.DINT.int) {
+                                if (dataModel.type == DataType.DINT.dataTypeNumber) {
                                     Row() {
                                         Switch(checked = checkedStateSetCounter.value, onCheckedChange = {
                                             checkedStateSetCounter.value = it
@@ -517,7 +535,7 @@ private fun MyAlertDialog(
                                 }
 
                                 //WORD
-                                if (dataModel.type == DataType.WORD.int && dataModel.listString.isNotEmpty()) {
+                                if (dataModel.type == DataType.WORD.dataTypeNumber && dataModel.listString.isNotEmpty()) {
 
                                     val listMessageDescription = dataModel.listString
                                     val lastIndex = listMessageDescription.size - 1
@@ -580,14 +598,14 @@ private fun MyAlertDialog(
                                     var limitMax = setting.limitMax
 
                                     when (dataModel.type) {
-                                        DataType.REAL.int -> {
+                                        DataType.REAL.dataTypeNumber -> {
                                             if (!errorStateMax.value) limitMax =
                                                 stringLimittoFlout(textLimitMax)
                                         }
-                                        DataType.BOOL.int -> {
+                                        DataType.BOOL.dataTypeNumber -> {
                                             limitMax = if (checkedStateWarning_1.value) 1f else 0f
                                         }
-                                        DataType.WORD.int -> {
+                                        DataType.WORD.dataTypeNumber -> {
                                             limitMax = switchRem.value.toInt(2).toFloat()// сделать проверку
                                         }
                                     }
@@ -595,11 +613,11 @@ private fun MyAlertDialog(
                                     var limitMin = setting.limitMin
 
                                     when (dataModel.type) {
-                                        DataType.REAL.int -> {
+                                        DataType.REAL.dataTypeNumber -> {
                                             if (!errorStateMin.value) limitMin =
                                                 stringLimittoFlout(textLimitMin)
                                         }
-                                        DataType.BOOL.int -> {
+                                        DataType.BOOL.dataTypeNumber -> {
                                             limitMin = if (checkedStateWarning_0.value) 1f else 0f
                                         }
                                     }
@@ -619,7 +637,7 @@ private fun MyAlertDialog(
                                         )
                                     )
 
-                                    if (!errorStateSetCount.value && dataModel.type == DataType.DINT.int) {
+                                    if (!errorStateSetCount.value && dataModel.type == DataType.DINT.dataTypeNumber) {
                                         onValueChange(
                                             ControlInfo(
                                                 id = dataModel.id,

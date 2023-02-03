@@ -14,9 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,6 +121,32 @@ fun TestCard(){
 
 
 }
+
+
+@Composable
+fun PreviewIcons(){
+    Column() {
+        Button(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.Share,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
+        }
+        Button(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.Person,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
+        }
+        Button(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.LocationOn,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
+        }
+        Button(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.Star,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
+        }
+        Button(onClick = { /*TODO*/ }) {
+            Icon(Icons.Filled.ShoppingCart,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
+        }
+
+
+    }
+}
+
+
 
 
 @Preview(showBackground = true)

@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.message.Message
 //import com.example.homecontrolssystemv01.ui.theme.Purple700

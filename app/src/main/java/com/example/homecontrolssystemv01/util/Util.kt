@@ -205,12 +205,12 @@ fun createMessageListLimit(
 
     dataModelList.forEach { data->
         when(data.type){
-            DataType.REAL.int -> {
+            DataType.REAL.dataTypeNumber -> {
                 if (data.value?.toFloatOrNull() != null){
                     listDataFloat.add(Pair(data.id,data.value.toFloat()))
             }}
 
-            DataType.BOOL.int ->{
+            DataType.BOOL.dataTypeNumber ->{
                 if (data.value?.toFloatOrNull() != null){
                     listDataBool.add(Pair(data.id,data.value.toFloat()))
                 }}

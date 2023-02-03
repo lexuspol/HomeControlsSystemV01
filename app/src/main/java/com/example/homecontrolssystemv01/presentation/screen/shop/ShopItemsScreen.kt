@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.presentation.screen
+package com.example.homecontrolssystemv01.presentation.screen.shop
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -6,78 +6,102 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import com.example.homecontrolssystemv01.R
-import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
+import com.example.homecontrolssystemv01.data.database.ShopDbModel
 
 @Composable
-fun ShopScreen(
-    shopList: List<ShopItem>?,
-    addItem:(ShopItem)-> Unit,
+fun ShopItemsScreen(
+    route:String,
+    shopList: List<ShopDbModel>?,
+    putItem:(ShopDbModel)-> Unit,
     deleteItem:(Int) -> Unit,
     pressOnBack: () -> Unit = {}
 ){
-    val nextId = remember { mutableStateOf(0)}
-
-    if (!shopList.isNullOrEmpty()){
-        shopList.forEach { item->
-
-            if (item.itemId != nextId.value){
-                return@forEach
-            }
-            nextId.value = item.itemId + 1
-       }
-    }
 
     val showDialog = remember { mutableStateOf(false)}
 
     if (showDialog.value){
-        ShopAlertDialog(nextId.value,onDismiss = {showDialog.value = false},addItem,deleteItem)
+       ShopAlertDialog(route,getNextId(shopList),onDismiss = {showDialog.value = false},putItem,deleteItem)
     }
     Scaffold(
         backgroundColor = MaterialTheme.colors.primarySurface,
-        topBar = { AppBarShop({showDialog.value = true},pressOnBack)}
-
+        topBar = { AppBarShop(route,{showDialog.value = true},pressOnBack) }
     ) {
             padding ->
 
         if (!shopList.isNullOrEmpty()){
+
         LazyColumn(modifier = Modifier.padding()){
           //  item { Text("ShopList") }
                 items(shopList){
-                    ShopItemRow(shopItem = it,addItem,deleteItem)
+                    ShopItemRow(route,shopItem = it,putItem,deleteItem)
                 }
             }
         }
     }
 }
 
+fun getNextId(shopList: List<ShopDbModel>?):Int{
+
+    if (!shopList.isNullOrEmpty()){
+
+        val list2 = shopList.map {it.itemId}
+
+        var i = 0
+
+        run outer@{
+            for (j in 0..list2.size+1) {
+                if (!list2.contains(j)) {
+                    i = j
+                    return@outer
+                }
+            }
+        }
+
+//        run outer@{
+//            shopList.forEachIndexed { index, shopItem ->
+//                if (index != shopItem.itemId) {
+//                    i = index
+//                    return@outer
+//                }
+//                i = index + 1
+//            }
+//        }
+
+        return i
+    }else return 0
+
+}
+
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShopItemRow(shopItem: ShopItem,addItem:(ShopItem)-> Unit,deleteItem:(Int) -> Unit){
+fun ShopItemRow(route:String, shopItem: ShopDbModel,addItem:(ShopDbModel)-> Unit,deleteItem:(Int) -> Unit){
 
     val showDialog = remember { mutableStateOf(false)}
 
     if (showDialog.value){
-        ShopAlertDialog(-1,onDismiss = {showDialog.value = false},addItem,deleteItem,shopItem)
+        ShopAlertDialog(route,-1,onDismiss = {showDialog.value = false},addItem,deleteItem,shopItem)
     }
 
     val colorBorder = if (shopItem.enabled) Color.White else MaterialTheme.colors.background
@@ -120,15 +144,40 @@ fun ShopItemRow(shopItem: ShopItem,addItem:(ShopItem)-> Unit,deleteItem:(Int) ->
 }
 
 @Composable
-fun ShopAlertDialog(nextId:Int,onDismiss: () -> Unit,
-                    addItem:(ShopItem)-> Unit,deleteItem: (Int) -> Unit,
-                    item:ShopItem = ShopItem() ){
-    val numberList = listOf(1,2,3,4,5,6)
+fun ShopAlertDialog(route: String,
+    nextId:Int,onDismiss: () -> Unit,
+                    addItem:(ShopDbModel)-> Unit,deleteItem: (Int) -> Unit,
+                    item:ShopDbModel = ShopDbModel() ){
+
+
+    val stringList = stringArrayResource(id = when (route){
+        NavShopScreen.ShopPublicScreen.route-> R.array.shopPublicGroup
+        NavShopScreen.ShopPersonalScreen.route-> R.array.shopPersonalGroup
+        else -> R.array.shopPublicGroup
+    })
+
+//        listOf("1. Мучное, сладкое","2. Химия","3. Крупы, приправы","4. Фрукты, овощи",
+//                            "5. Мясо, рыба","6. Молочка","7. Вода")
+
+    //Log.d("HCS","ShopPublicScreen init $nextId")
+
+    var groupId by remember { mutableStateOf(item.groupId) }
+
+    val section = if (item.groupId==0) "" else stringList[item.groupId-1]
 
     var textItem by remember { mutableStateOf(item.itemName) }
     var textCount by remember { mutableStateOf(item.countString) }
+    var textSection by remember { mutableStateOf(section) }
 
-    var groupId by remember { mutableStateOf(item.groupId) }
+
+
+    var mExpanded by remember { mutableStateOf(false) }
+    var mTextFieldSizeSection by remember { mutableStateOf(Size.Zero)}
+
+    val icon = if (mExpanded)
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
 
     AlertDialog(onDismissRequest = onDismiss,
     title = {
@@ -141,7 +190,7 @@ fun ShopAlertDialog(nextId:Int,onDismiss: () -> Unit,
                         textItem = it
                     },
                     // enabled = checkedStateLimit.value,
-                    label = { Text(text = "Item") },
+                    label = { Text(text = "Продукт") },
                     textStyle = MaterialTheme.typography.subtitle1,
                     //  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
@@ -150,33 +199,45 @@ fun ShopAlertDialog(nextId:Int,onDismiss: () -> Unit,
                     onValueChange = {
                         textCount = it
                     },
-                    label = { Text(text = "Count") },
+                    label = { Text(text = "Кол-во") },
                     textStyle = MaterialTheme.typography.subtitle1,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    contentPadding = PaddingValues(8.dp)
+                OutlinedTextField(
+                    value = textSection,
+                    onValueChange = {
+                        textSection = it
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // .padding(top=10.dp)
+                        .onGloballyPositioned { coordinates ->
+                            // This value is used to assign to
+                            // the DropDown the same width
+                            mTextFieldSizeSection = coordinates.size.toSize()
+                        },
+                   // enabled = !serverMode,
+                    label = {Text("Раздел")},
+                    trailingIcon = {
+                        Icon(icon,"contentDescription",
+                            Modifier.clickable { mExpanded = !mExpanded })
+                    }
+                )
+                DropdownMenu(
+                    expanded = mExpanded,
+                    onDismissRequest = { mExpanded = false },
+                    modifier = Modifier
+                        .width(with(LocalDensity.current){mTextFieldSizeSection.width.toDp()})
                 ) {
-                    items(numberList){number->
-                        Card(
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .clickable {
-                                   // colorTitle = number.second
-                                    groupId = number
-                                }
-                            ,
-                            backgroundColor = if(number == groupId) MaterialTheme.colors.primarySurface
-                            else MaterialTheme.colors.background
-                        ) {
-                            Text(
-                                text = number.toString(),
-                                fontSize = 24.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(4.dp),
-                            )
+                    stringList.forEachIndexed { index, map ->
+                        DropdownMenuItem(onClick = {
+                            textSection = map
+                            mExpanded = false
+                            groupId = index+1
+                           // setLoggingSetting(LogSetting(map.key,logSetting.logKey,logType))
+                        }) {
+                            Text(text = map)
                         }
                     }
                 }
@@ -193,12 +254,12 @@ fun ShopAlertDialog(nextId:Int,onDismiss: () -> Unit,
                         enabled = nextId==-1
 
                     ) {
-                        Text("DELETE")
+                        Text("УДАЛИТЬ")
                     }
 
                     Button(onClick = { onDismiss()
                         addItem(
-                            ShopItem(
+                            ShopDbModel(
                                 if(nextId==-1)item.itemId else nextId,
                                 textItem,
                                 groupId,
@@ -217,7 +278,7 @@ fun ShopAlertDialog(nextId:Int,onDismiss: () -> Unit,
 
 
 @Composable
-fun AppBarShop(onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
+fun AppBarShop(route:String,onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
     TopAppBar(
         elevation = 4.dp,
         //backgroundColor = Purple200,
@@ -229,7 +290,11 @@ fun AppBarShop(onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
             IconButton(onClick = {pressOnBack()}) {
                 Icon(Icons.Filled.ArrowBack, null)
             }
-            Text(stringResource(R.string.shop))
+            Text(stringResource(when(route){
+                NavShopScreen.ShopPublicScreen.route->R.string.shop_public
+                NavShopScreen.ShopPersonalScreen.route->R.string.shop_personal
+                else ->  R.string.shop
+            }))
             IconButton(onClick = {
                 onDialog()
             }) {
@@ -238,3 +303,10 @@ fun AppBarShop(onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun ShopTestPreview(){
+   // ShopAlertDialog(nextId = 1, onDismiss = { /*TODO*/ }, addItem = { /*TODO*/ }, deleteItem ={ /*TODO*/ } )
+}
+

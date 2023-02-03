@@ -1,6 +1,6 @@
 package com.example.homecontrolssystemv01.domain.enum
 
-enum class DataType(val int: Int) {
+enum class DataType(val dataTypeNumber: Int) {
 
     INT(1),
     REAL(2),

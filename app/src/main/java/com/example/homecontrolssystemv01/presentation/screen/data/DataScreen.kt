@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.presentation.screen
+package com.example.homecontrolssystemv01.presentation.screen.data
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.Crossfade
@@ -28,14 +28,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.homecontrolssystemv01.presentation.MainViewModel
+import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
+import com.example.homecontrolssystemv01.presentation.screen.NavScreen
+import com.example.homecontrolssystemv01.presentation.screen.*
 import com.example.homecontrolssystemv01.util.createDataContainer
 import kotlinx.coroutines.launch
 
 
 @Composable
-fun DataScreen(viewModel: MainViewModel,
-               selectItem: (String) -> Unit,
-               selectSetting: () -> Unit){
+fun DataScreen(
+    viewModel: MainViewModel,
+    selectItem: (String) -> Unit,
+    selectSetting: () -> Unit
+) {
 
     val dataListLive = viewModel.getDataListUI()
     val settingListLive = viewModel.getDataSettingUI()
@@ -44,7 +49,7 @@ fun DataScreen(viewModel: MainViewModel,
     val settingList = settingListLive.observeAsState().value
 
     //val dataContainerList = createDataContainer(dataListLive,settingList)
-    val dataContainerList = createDataContainer(dataList,settingList)
+    val dataContainerList = createDataContainer(dataList, settingList)
 
     val messageListSystem = viewModel.getMessageListUI().observeAsState().value
     //Log.d("HCS",messageListSystem.toString())
@@ -57,102 +62,106 @@ fun DataScreen(viewModel: MainViewModel,
     val scaffoldState = rememberScaffoldState()
     val scope = rememberCoroutineScope()
 
-       Scaffold(
-           scaffoldState = scaffoldState,
-            backgroundColor = MaterialTheme.colors.primarySurface,
-            topBar = {DataAppBar(selectSetting,selectMenu={
-                scope.launch{
+    Scaffold(
+        scaffoldState = scaffoldState,
+        backgroundColor = MaterialTheme.colors.primarySurface,
+        topBar = {
+            DataAppBar(selectSetting, selectMenu = {
+                scope.launch {
                     scaffoldState.drawerState.open()
                 }
-            })},
-            bottomBar = {
-                BottomNavigation(
-                    //backgroundColor = Mate,
+            })
+        },
+        bottomBar = {
+            BottomNavigation(
+                //backgroundColor = Mate,
 
-                ) {
-                    tabs.forEach { tab ->
-                        //цвет MESSAGE
-                        var color = LocalContentColor.current
-                        if (tab.name==DataScreenTab.MESSAGE.name && !messageListSystem.isNullOrEmpty()){
+            ) {
+                tabs.forEach { tab ->
+                    //цвет MESSAGE
+                    var color = LocalContentColor.current
+                    if (tab.name == DataScreenTab.MESSAGE.name && !messageListSystem.isNullOrEmpty()) {
 
-                            val alarm = messageListSystem.find { it.type==2 }
-                            val warning = messageListSystem.find { it.type==1 }
+                        val alarm = messageListSystem.find { it.type == 2 }
+                        val warning = messageListSystem.find { it.type == 1 }
 
-                            when{
-                                (alarm !=null) ->  {
-                                    color = Color.Red
-                                }
-                                (warning!=null) -> color = Color.Yellow
+                        when {
+                            (alarm != null) -> {
+                                color = Color.Red
                             }
-
+                            (warning != null) -> color = Color.Yellow
                         }
-                        BottomNavigationItem(
-                            icon = { Icon(imageVector = tab.icon, contentDescription = null) },
-                            label = { Text(text = stringResource(tab.title), color = Color.White) },
-                            selected = tab == selectedTab,
-                            onClick = { viewModel.selectTab(tab.title) },
-                            selectedContentColor = color,
-                            unselectedContentColor = color,
+
+                    }
+                    BottomNavigationItem(
+                        icon = { Icon(imageVector = tab.icon, contentDescription = null) },
+                        label = { Text(text = stringResource(tab.title), color = Color.White) },
+                        selected = tab == selectedTab,
+                        onClick = { viewModel.selectTab(tab.title) },
+                        selectedContentColor = color,
+                        unselectedContentColor = color,
 
                         )
-                    }
-                }
-            },
-           drawerContent={MyMenu(selectItem = {
-               scope.launch{ scaffoldState.drawerState.close()}
-               selectItem(it)})}
-        ) { innerPadding ->
-            val modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxHeight()
-            Crossfade(selectedTab) { destination ->
-                when (destination) {
-                    DataScreenTab.DATA -> DataListScreen(
-                        modifier = modifier,
-                        dataContainerList,
-                        messageListSystem,
-                        systemSetting,
-                        onSettingChange = {viewModel.putDataSettingUI(it)},
-                    onControl = {viewModel.putControlUI(it)},
-                        onLoadData = {viewModel.loadDataUI()},
-                        deleteData = {viewModel.deleteDataUI(it)}
-                    )
-
-                    DataScreenTab.MESSAGE -> MessageScreen(
-                        modifier = modifier,
-                        messageListSystem,
-                        deleteMessage = {
-                            viewModel.deleteMessageUI(it)
-                        }
-                    )
-
-                    DataScreenTab.CONTROL -> ControlListScreen(
-                        modifier = modifier,
-                        dataContainerList,
-                        onControl = {viewModel.putControlUI(it)}
-                    )
                 }
             }
-
-
-
-
-
+        },
+        drawerContent = {
+            MyMenu(selectItem = {
+                scope.launch { scaffoldState.drawerState.close() }
+                selectItem(it)
+            })
         }
+    ) { innerPadding ->
+        val modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxHeight()
+        Crossfade(selectedTab) { destination ->
+            when (destination) {
+                DataScreenTab.DATA -> DataListScreen(
+                    modifier = modifier,
+                    dataContainerList,
+                    messageListSystem,
+                    systemSetting,
+                    onSettingChange = { viewModel.putDataSettingUI(it) },
+                    onControl = { viewModel.putControlUI(it) },
+                    onLoadData = { viewModel.loadDataUI() },
+                    deleteData = { viewModel.deleteDataUI(it) }
+                )
+
+                DataScreenTab.MESSAGE -> MessageScreen(
+                    modifier = modifier,
+                    messageListSystem,
+                    deleteMessage = {
+                        viewModel.deleteMessageUI(it)
+                    }
+                )
+
+                DataScreenTab.CONTROL -> ControlListScreen(
+                    modifier = modifier,
+                    dataContainerList,
+                    onControl = { viewModel.putControlUI(it) }
+                )
+            }
+        }
+
+
+    }
 
 }
 
 @Composable
-private fun DataAppBar(selectSetting: () -> Unit = {},
-                       selectMenu: () -> Unit = {}
+private fun DataAppBar(
+    selectSetting: () -> Unit = {},
+    selectMenu: () -> Unit = {}
 
-                       ) {
+) {
     TopAppBar(
         elevation = 4.dp,
-       // backgroundColor = PrimaryDark,
-        ){
+        // backgroundColor = PrimaryDark,
+    ) {
 
-        IconButton(onClick = { selectMenu()},
+        IconButton(
+            onClick = { selectMenu() },
             modifier = Modifier
                 .weight(1f)
         ) {
@@ -164,7 +173,7 @@ private fun DataAppBar(selectSetting: () -> Unit = {},
 
 
 
-                Text(
+        Text(
             modifier = Modifier
                 .padding(8.dp)
                 .align(Alignment.CenterVertically)
@@ -190,14 +199,14 @@ private fun DataAppBar(selectSetting: () -> Unit = {},
 
 
 @Composable
-fun MyMenu(selectItem: (String) -> Unit){
+fun MyMenu(selectItem: (String) -> Unit) {
 
     val itemsList = prepareNavigationDrawerItems()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize(),
-          //  .background(brush = Brush.verticalGradient(colors = MaterialTheme.colors.)),
+        //  .background(brush = Brush.verticalGradient(colors = MaterialTheme.colors.)),
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(vertical = 36.dp)
     ) {
@@ -230,7 +239,7 @@ fun MyMenu(selectItem: (String) -> Unit){
             )
         }
 
-        items(itemsList){item ->
+        items(itemsList) { item ->
             NavigationListItem(item = item) {
                 selectItem(item.route)
             }
@@ -238,7 +247,6 @@ fun MyMenu(selectItem: (String) -> Unit){
         }
     }
 }
-
 
 
 @Composable
@@ -252,7 +260,7 @@ private fun NavigationListItem(
             .clickable { itemClick(item.route) }
             .fillMaxSize()
             .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically){
+            verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = item.image,
                 contentDescription = item.label,
@@ -269,8 +277,6 @@ private fun NavigationListItem(
 }
 
 
-
-
 @Composable
 private fun prepareNavigationDrawerItems(): List<NavigationDrawerItem> {
     val itemsList = arrayListOf<NavigationDrawerItem>()
@@ -278,7 +284,7 @@ private fun prepareNavigationDrawerItems(): List<NavigationDrawerItem> {
     itemsList.add(
         NavigationDrawerItem(
             image = Icons.Filled.List,
-            label = "Data",
+            label = "Данные",
             route = NavScreen.DataScreen.route
 
         )
@@ -287,7 +293,7 @@ private fun prepareNavigationDrawerItems(): List<NavigationDrawerItem> {
     itemsList.add(
         NavigationDrawerItem(
             image = Icons.Filled.ShoppingCart,
-            label = "Shop",
+            label = "Магазин",
             route = NavScreen.ShopScreen.route
 
         )
@@ -295,8 +301,17 @@ private fun prepareNavigationDrawerItems(): List<NavigationDrawerItem> {
 
     itemsList.add(
         NavigationDrawerItem(
+            image = Icons.Filled.AccountBox,
+            label = "Архив",
+            route = NavScreen.LoggingScreen.route
+
+        )
+    )
+
+    itemsList.add(
+        NavigationDrawerItem(
             image = Icons.Filled.Settings,
-            label = "Settings",
+            label = "Настройки",
             route = NavScreen.SettingScreen.route
 
         )

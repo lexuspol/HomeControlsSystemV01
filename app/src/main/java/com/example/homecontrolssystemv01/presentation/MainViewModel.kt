@@ -13,12 +13,15 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
+import com.example.homecontrolssystemv01.domain.enum.LogKey
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
+import com.example.homecontrolssystemv01.domain.model.logging.LogItem
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.example.homecontrolssystemv01.domain.model.setting.LogSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 import com.example.homecontrolssystemv01.domain.model.shop.ShopItem
 import com.example.homecontrolssystemv01.domain.useCase.*
@@ -33,6 +36,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private val aplic = application
 
     private val repository = MainRepositoryImpl(aplic)
+    private val resourcesDataMap = ResourcesString.getResourcesDataMap(aplic)
+
     private val loadData = LoadDataUseCase(repository)
 
     private val getDataList = GetDataListUseCase(repository)
@@ -49,6 +54,9 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     private var _connectSetting = ConnectSetting()
     private var _systemSetting = SystemSetting()
+   // private val _listLogSetting = mutableListOf<LogSetting>()
+
+
 
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
 
@@ -57,6 +65,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
             _connectSetting.ssid,
             _connectSetting.serverMode,
             _connectSetting.cycleMode,
+            _connectSetting.listLogSetting.toList()
 
         )
     }
@@ -95,6 +104,23 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     fun getShopListUI(): SnapshotStateList<ShopItem> {
         return repository.getShopList()
     }
+//    fun getLogListUI(id:Int):MutableState<List<LogItem>> {
+//        return repository.getLogList(id)
+//    }
+
+    fun getLogMapUI(idKey:String):MutableState<Map<String, LogItem>> {
+        return repository.getLogMap(idKey)
+    }
+
+    fun getLogIdListUI():MutableState<List<String>>{
+        return repository.getLogIdList()
+    }
+
+    fun deleteLogItemUI(idKey:String){
+        repository.deleteLogItem(idKey)
+    }
+
+    //////
 
     fun addShopItemUI(item:ShopItem){
         repository.addShopItem(item)
@@ -143,10 +169,18 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun setConnectSetting(connectSetting: ConnectSetting){
         _connectSetting = connectSetting
+
+      //  Log.d("HCS","fun setConnectSetting")
+
         with(sharedPref.edit()) {
             putString(KEY_SSID,_connectSetting.ssid)
             putBoolean(KEY_MODE_PERIODIC,_connectSetting.serverMode)
             putBoolean(KEY_MODE_CYCLE,_connectSetting.cycleMode)
+
+            connectSetting.listLogSetting.forEach {
+                putInt(it.logKey,it.logId)
+            }
+
             apply()
         }
         loadData(createConnectSetting())
@@ -160,14 +194,46 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+//    fun setLoggingSetting(logSetting: LogSetting){
+//        with(sharedPref.edit()) {
+//            putInt(logSetting.logKey,logSetting.logId)
+//            apply()
+//        }
+//    }
+
+    private fun getLoggingSetting():List<LogSetting>{
+       // Log.d("HCS","fun getLoggingSetting()")
+        val listLogSetting = mutableListOf<LogSetting>()
+        //запрос по колличеству Enum
+        LogKey.values().forEach {
+            listLogSetting.add(
+                LogSetting(
+                    sharedPref.getInt(it.name,0),
+                    it.name
+            )
+            )
+        }
+        return listLogSetting.toList()
+    }
+
+    fun getResourcesDataMapUI():Map<Int, ResourcesString.Data>{
+        return resourcesDataMap
+    }
+
 
     private val _selectedTab: MutableState<Int> = mutableStateOf(0)
     val selectedTab: State<Int> get() = _selectedTab
 
     fun selectTab(@StringRes tab: Int) {_selectedTab.value = tab}
 
+    private val _selectedTabShop: MutableState<Int> = mutableStateOf(0)
+    val selectedTabShop: State<Int> get() = _selectedTabShop
+    fun selectTabShop(@StringRes tab: Int) {_selectedTabShop.value = tab}
+
+
     init {
         readPref()
+       // _resourcesDataMap = ResourcesStringObject.getResourcesDataMap(application)
         //loadData(createConnectSetting())
     }
     private fun readPref() {
@@ -175,6 +241,8 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE_PERIODIC,false)
         _systemSetting.showDetails = sharedPref.getBoolean(KEY_SHOW_DETAILS,false)
         _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE,false)
+        _connectSetting.listLogSetting = getLoggingSetting()
+
 
         val auth = Firebase.auth
          if (auth.currentUser ==null) {

@@ -69,7 +69,7 @@ class RefreshDataWorker(
     override suspend fun doWork(): Result {
 
         val dataSystem = mutableListOf(
-            DataDbModel(DataID.deviceInfo.id,infoDevice,DataID.deviceInfo.name,DataType.STRING.int),
+            DataDbModel(DataID.deviceInfo.id,infoDevice,DataID.deviceInfo.name,DataType.STRING.dataTypeNumber),
         )
 
         //чтобы удаленные данные загрузились один раз и после локальных
@@ -86,7 +86,7 @@ class RefreshDataWorker(
 
 
 
-                    dataSystem.add(DataDbModel(DataID.SSID.id,ssid,DataID.SSID.name,DataType.STRING.int))
+                    dataSystem.add(DataDbModel(DataID.SSID.id,ssid,DataID.SSID.name,DataType.STRING.dataTypeNumber))
 
                     if (ssid == ssidSetting){
 
@@ -101,7 +101,7 @@ class RefreshDataWorker(
                                 DataID.connectMode.id,
                                 ModeConnect.LOCAL.name,
                                 DataID.connectMode.name,
-                                DataType.STRING.int))
+                                DataType.STRING.dataTypeNumber))
                             dataLocal + dataSystem
 
                         } else {
@@ -110,7 +110,7 @@ class RefreshDataWorker(
                                 DataID.connectMode.id,
                                 ModeConnect.STOP.name,
                                 DataID.connectMode.name,
-                                DataType.STRING.int))
+                                DataType.STRING.dataTypeNumber))
                             dataSystem
                         }
 
@@ -129,14 +129,14 @@ class RefreshDataWorker(
                                 DataID.connectMode.id,
                                 ModeConnect.REMOTE.name,
                                 DataID.connectMode.name,
-                                DataType.STRING.int))
+                                DataType.STRING.dataTypeNumber))
                             dataRemote + dataSystem
                         } else {
                             dataSystem.add(DataDbModel(
                                 DataID.connectMode.id,
                                 ModeConnect.STOP.name,
                                 DataID.connectMode.name,
-                                DataType.STRING.int))
+                                DataType.STRING.dataTypeNumber))
                             dataSystem
                         }
 
@@ -306,6 +306,9 @@ class RefreshDataWorker(
                     it.id == DataID.lastTimeUpdate.id
                 }?.value,dataFormat)
                 Log.d("HCS_RefreshDataWorker", "timeLocal = $timeFromApiServer")
+
+
+
             }
 
             return mapper.mapJsonContainerToListValue(jsonContainer).map {mapper.valueDtoToDbModel(it)

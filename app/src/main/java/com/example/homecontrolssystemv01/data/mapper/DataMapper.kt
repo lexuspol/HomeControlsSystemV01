@@ -6,6 +6,7 @@ import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.database.DataSettingDbModel
 import com.example.homecontrolssystemv01.data.database.MessageDbModel
+import com.example.homecontrolssystemv01.data.database.ShopDbModel
 import com.example.homecontrolssystemv01.data.network.model.DataDto
 import com.example.homecontrolssystemv01.data.network.model.DataJsonContainerDto
 import com.example.homecontrolssystemv01.domain.enum.DataType
@@ -95,7 +96,7 @@ class DataMapper {
                 //value = if(dataDb.name == "lastTimeUpdate") convertDateServerToDateUI(dataDb.value) else dataDb.value,
                 value = when(dataDb.type){
 
-                    DataType.BOOL.int ->{
+                    DataType.BOOL.dataTypeNumber ->{
                         if (converBool){
                             when(dataDb.value){
                                 "1"->valueBoolFor_1
@@ -105,9 +106,9 @@ class DataMapper {
                         }else dataDb.value
                     }
 
-                    DataType.DTL.int->convertDateServerToDateUI(dataDb.value,dataFormat)
-                    DataType.TIME.int->convertTimeServerToTimeUI(dataDb.value)
-                    DataType.WORD.int->convertWordToByte(dataDb.value,16)
+                    DataType.DTL.dataTypeNumber->convertDateServerToDateUI(dataDb.value,dataFormat)
+                    DataType.TIME.dataTypeNumber->convertTimeServerToTimeUI(dataDb.value)
+                    DataType.WORD.dataTypeNumber->convertWordToByte(dataDb.value,16)
                     else -> dataDb.value
                 },
                 name = dataDb.name,
@@ -207,6 +208,27 @@ class DataMapper {
             visible = message.visible
         )
 
+
+    }
+
+    fun shopItemToDbModel(shopItem: ShopItem): ShopDbModel {
+        return ShopDbModel(
+                itemId = shopItem.itemId,
+            itemName = shopItem.itemName,
+            groupId = shopItem.groupId,
+            countString = shopItem.countString,
+            enabled = shopItem.enabled
+                )
+    }
+
+    fun mapShopItemToEntity(shopDbModel: ShopDbModel):ShopDbModel {
+        return ShopDbModel(
+            itemId = shopDbModel.itemId,
+            itemName = shopDbModel.itemName,
+            groupId = shopDbModel.groupId,
+            countString = shopDbModel.countString,
+            enabled = shopDbModel.enabled
+        )
 
     }
 
