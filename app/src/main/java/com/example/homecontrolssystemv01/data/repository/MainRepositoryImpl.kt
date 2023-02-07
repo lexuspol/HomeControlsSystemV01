@@ -172,6 +172,11 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
     }
 
     override fun getLogIdList(): MutableState<List<String>> {
+
+        val test = "test"
+
+        test.toInt()
+
         //myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(logIdEventListener)
         myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(getEventListener("id"))
         Log.d("HCS", "fun getLogIdList()")

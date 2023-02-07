@@ -31,20 +31,21 @@ import java.util.*
 
 @Composable
 fun LoggingScreen(
-    resourcesDataMapUI:Map<Int, ResourcesString.Data>,
-    getLogIdList:()-> MutableState<List<String>>,
-    getLog:(idKey:String)-> MutableState<Map<String, LogItem>>,
-    deleteLogItem:(idKey:String)->Unit,
+    resourcesDataMapUI: Map<Int, ResourcesString.Data>,
+    getLogIdList: () -> MutableState<List<String>>,
+    getLog: (idKey: String) -> MutableState<Map<String, LogItem>>,
+    deleteLogItem: (idKey: String) -> Unit,
     pressOnBack: () -> Unit = {}
-){
+) {
+
 
 
     //val logId = remember { mutableStateOf("0")}
-    val logId = remember { mutableStateOf("0")}
-    val logDescription = remember { mutableStateOf("")}
-    val logUnit = remember { mutableStateOf("")}
+    val logId = remember { mutableStateOf("0") }
+    val logDescription = remember { mutableStateOf("") }
+    val logUnit = remember { mutableStateOf("") }
 
-    val logIdList = remember { getLogIdList()}// чтобы не вызывало много раз
+    val logIdList = remember { getLogIdList() }// чтобы не вызывало много раз
 
 
 //    if (!loggingList.isNullOrEmpty()){
@@ -57,67 +58,67 @@ fun LoggingScreen(
 //       }
 //    }
 
-    val showDialog = remember { mutableStateOf(false)}
-    val showLog = remember { mutableStateOf(false)}
+    val showDialog = remember { mutableStateOf(false) }
+    val showLog = remember { mutableStateOf(false) }
 
-    if (showDialog.value){
-        LoggingAlertDialog(resourcesDataMapUI,logIdList.value,
-            onDismiss = {showDialog.value = false},
-            getLog = fun(key:String, description:String, unit:String){
+    if (showDialog.value) {
+        LoggingAlertDialog(resourcesDataMapUI, logIdList.value,
+            onDismiss = { showDialog.value = false },
+            getLog = fun(key: String, description: String, unit: String) {
                 logId.value = key
                 logDescription.value = description
                 logUnit.value = unit
                 showLog.value = true
             }
 
-               // logId.value = it
+            // logId.value = it
         )
     }
     Scaffold(
         backgroundColor = MaterialTheme.colors.primarySurface,
-        topBar = { AppBarLogging({
-            showLog.value = false
-            showDialog.value = true},pressOnBack)
+        topBar = {
+            AppBarLogging(onDialog = {
+                showLog.value = false
+                showDialog.value = true
+            }, pressOnBack)
         }
-    ) {
-            padding ->
+    ) { padding ->
 
 
-        if (showLog.value){
+        if (showLog.value) {
 
             val logMap = remember { getLog(logId.value) }//чтобы не вызывалось много раз
 
 
-            if (logMap.value.isNotEmpty()){
-
+            if (logMap.value.isNotEmpty()) {
 
 
                 val key = logId.value
                 val itemMap = logMap.value[key]
-                var maxValue:Float? = null
-                var minValue:Float? = null
-                var averageValue:Float? = null
+                var maxValue: Float? = null
+                var minValue: Float? = null
+                var averageValue: Float? = null
 
-                if(itemMap != null){
+                if (itemMap != null) {
                     val calendar = Calendar.getInstance()
 
                     try {
                         val listValue = mutableListOf<Float>()
                         itemMap.value.forEach {
-                        listValue.add(it.second.toFloat())
+                            listValue.add(it.second.toFloat())
 
                         }
 
                         maxValue = listValue.maxOrNull()
                         minValue = listValue.minOrNull()
-                        averageValue = (listValue.average()*100).roundToInt().toFloat()/100
+                        averageValue = (listValue.average() * 100).roundToInt().toFloat() / 100
 
                         //Log.d("HCS","max= $max, min = $min, average = $aver")
 
-                    }catch (e:java.lang.Exception){
-                        Log.d("HCS",e.toString())
+                    } catch (e: java.lang.Exception) {
+                        Log.d("HCS", e.toString())
                     }
-                    LazyColumn(modifier = Modifier.padding()){
+                    LazyColumn(modifier = Modifier.padding()) {
 
                         item {
 
@@ -125,18 +126,25 @@ fun LoggingScreen(
 
                                 Column(Modifier.fillMaxSize()) {
                                     Text(
-                                        text = logDescription.value, modifier = Modifier.padding(10.dp),
+                                        text = logDescription.value,
+                                        modifier = Modifier.padding(10.dp),
                                         //textAlign = TextAlign.Center,
                                         style = MaterialTheme.typography.h6
                                     )
                                     if (maxValue != null && minValue != null && averageValue != null) {
 
-                                        LoggingRowValue(text = stringResource(R.string.maxValue),
-                                            value = maxValue.toString(), unit = logUnit.value)
-                                        LoggingRowValue(text = stringResource(R.string.minValue),
-                                            value = minValue.toString(), unit = logUnit.value)
-                                        LoggingRowValue(text = stringResource(R.string.averageValue),
-                                            value = averageValue.toString(), unit = logUnit.value)
+                                        LoggingRowValue(
+                                            text = stringResource(R.string.maxValue),
+                                            value = maxValue.toString(), unit = logUnit.value
+                                        )
+                                        LoggingRowValue(
+                                            text = stringResource(R.string.minValue),
+                                            value = minValue.toString(), unit = logUnit.value
+                                        )
+                                        LoggingRowValue(
+                                            text = stringResource(R.string.averageValue),
+                                            value = averageValue.toString(), unit = logUnit.value
+                                        )
 
                                     }
 
@@ -146,17 +154,21 @@ fun LoggingScreen(
                             }
                         }
 
-                        items(itemMap.value){
-                            LoggingItemRow(it,logUnit.value,calendar)
+                        items(itemMap.value) {
+                            LoggingItemRow(it, logUnit.value, calendar)
                         }
 
-                        item{
-                            Button(onClick = { deleteLogItem(logId.value)
-                                             showLog.value = false},
+                        item {
+                            Button(
+                                onClick = {
+                                    deleteLogItem(logId.value)
+                                    showLog.value = false
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(10.dp),
-                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background)) {
+                                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.background)
+                            ) {
                                 Text(text = "DELETE LOG", style = MaterialTheme.typography.h6)
 
                             }
@@ -196,20 +208,24 @@ fun LoggingScreen(
 }
 
 @Composable
-fun LoggingItemRow(logValue: Pair<Long,String>, unit: String,calendar:Calendar
-                  // addItem:(ShopItem)-> Unit,deleteItem:(Int) -> Unit
-){
+fun LoggingItemRow(
+    logValue: Pair<Long, String>, unit: String, calendar: Calendar
+    // addItem:(ShopItem)-> Unit,deleteItem:(Int) -> Unit
+) {
 
-    Card(modifier = Modifier
-        .padding(10.dp, 5.dp)
-        .fillMaxWidth(),
+    Card(
+        modifier = Modifier
+            .padding(10.dp, 5.dp)
+            .fillMaxWidth(),
         shape = RoundedCornerShape(8.dp), elevation = 4.dp,
-       border = BorderStroke(1.dp, MaterialTheme.colors.background),
+        border = BorderStroke(1.dp, MaterialTheme.colors.background),
         backgroundColor = MaterialTheme.colors.primarySurface
     ) {
 
-        LoggingRowValue(text = convertLongToTime(logValue.first),
-            value = logValue.second, unit = unit )
+        LoggingRowValue(
+            text = convertLongToTime(logValue.first),
+            value = logValue.second, unit = unit
+        )
 
 //            Row(modifier = Modifier
 //                .padding(10.dp)
@@ -225,30 +241,30 @@ fun LoggingItemRow(logValue: Pair<Long,String>, unit: String,calendar:Calendar
 
 @Composable
 fun LoggingAlertDialog(
-    resourcesDataMapUI:Map<Int, ResourcesString.Data>,
-    listIdLog:List<String>,
+    resourcesDataMapUI: Map<Int, ResourcesString.Data>,
+    listIdLog: List<String>,
     onDismiss: () -> Unit,
-    getLog:(key:String,description:String,unit:String)-> Unit,
-){
+    getLog: (key: String, description: String, unit: String) -> Unit,
+) {
 
 
     AlertDialog(onDismissRequest = onDismiss,
-    title = {
-            },
+        title = {
+        },
         text = {
             Column(Modifier.padding(10.dp)) {
 
-                listIdLog.forEach {idKey->
+                listIdLog.forEach { idKey ->
 
                     val idInt = try {
                         idKey.substringBefore(LoggingType.LOGGING_PERIODIC.separator).toInt()
-                    }catch (e:Exception){
+                    } catch (e: Exception) {
                         0
                     }
 
-                    if (idInt != 0){
-                        val description = resourcesDataMapUI[idInt]?.description?:idKey
-                        val unit = resourcesDataMapUI[idInt]?.unit?:""
+                    if (idInt != 0) {
+                        val description = resourcesDataMapUI[idInt]?.description ?: idKey
+                        val unit = resourcesDataMapUI[idInt]?.unit ?: ""
 
                         Card(
                             modifier = Modifier
@@ -277,39 +293,42 @@ fun LoggingAlertDialog(
         },
         confirmButton = {
         }
-       // backgroundColor =
-        )
+        // backgroundColor =
+    )
 }
 
 
 @Composable
 fun AppBarLogging(
     //connectSetting: ConnectSetting,
-    onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
+    onDialog: () -> Unit, pressOnBack: () -> Unit = {}
+) {
     TopAppBar(
         elevation = 4.dp,
         //backgroundColor = Purple200,
-        ){
+    ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,){
-            IconButton(onClick = {pressOnBack()}) {
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            IconButton(onClick = { pressOnBack() }) {
                 Icon(Icons.Filled.ArrowBack, null)
             }
             Text(stringResource(R.string.logging))
 
 
-                IconButton(onClick = {
-                    onDialog()
-                }) {
-                    Icon(Icons.Filled.Add, null)
-                }
+            IconButton(onClick = {
+                onDialog()
+            }) {
+                Icon(Icons.Filled.Add, null)
+            }
 
 
         }
     }
 }
+
 @Composable
 fun CustomChart(
     barValue: List<Float>,
@@ -317,7 +336,7 @@ fun CustomChart(
     start_amount: Int,
     end_amount: Int
 ) {
-   // val context = LocalContext.current
+    // val context = LocalContext.current
     // BarGraph Dimensions
     val barGraphHeight by remember { mutableStateOf(200.dp) }
     val barGraphWidth by remember { mutableStateOf(10.dp) }
@@ -349,12 +368,13 @@ fun CustomChart(
                 contentAlignment = Alignment.BottomCenter
             ) {
 
-                Column(modifier = Modifier.fillMaxHeight(),
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
 
-                    val ser = start_amount+amount/2
+                    val ser = start_amount + amount / 2
 
                     Text(text = end_amount.toString())
                     Text(text = ser.toString())
@@ -373,12 +393,12 @@ fun CustomChart(
 
             Box(
                 //modifier = Modifier.fillMaxHeight()
-            ){
+            ) {
 
                 Box(
-                ){
+                ) {
                     Column(
-                       Modifier.fillMaxSize(),
+                        Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
 
                     ) {
@@ -417,8 +437,8 @@ fun CustomChart(
 
 
                 Box(
-                   // modifier = Modifier.fillMaxHeight()
-                ){
+                    // modifier = Modifier.fillMaxHeight()
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -429,28 +449,28 @@ fun CustomChart(
                     ) {
                         barValue.forEach {
 
-                            val height = (it + amount - end_amount)/amount
+                            val height = (it + amount - end_amount) / amount
 
                             //Column() {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(
-                                            start = barGraphWidth,
-                                            //    bottom = 5.dp
-                                        )
-                                        //          .clip(CircleShape)
-                                        .width(barGraphWidth)
-                                        .fillMaxHeight(height)
-                                        .background(color = Color.Red)
-                                        .clickable {
+                            Box(
+                                modifier = Modifier
+                                    .padding(
+                                        start = barGraphWidth,
+                                        //    bottom = 5.dp
+                                    )
+                                    //          .clip(CircleShape)
+                                    .width(barGraphWidth)
+                                    .fillMaxHeight(height)
+                                    .background(color = Color.Red)
+                                    .clickable {
 //                            Toast
 //                                .makeText(context, it.toString(), Toast.LENGTH_SHORT)
 //                                .show()
-                                        }
-                                )
+                                    }
+                            )
 
 
-                           // }//
+                            // }//
                         }
                     }
                 }
@@ -486,15 +506,17 @@ fun CustomChart(
 }
 
 @Composable
-fun LoggingRowValue(text:String,value:String,unit:String){
-    Row(modifier = Modifier
-        .padding(10.dp)
-        .fillMaxSize(),
+fun LoggingRowValue(text: String, value: String, unit: String) {
+    Row(
+        modifier = Modifier
+            .padding(10.dp)
+            .fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween) {
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
 
-        Text(text = text,style = MaterialTheme.typography.subtitle1)
-        Text(text = "$value $unit",style = MaterialTheme.typography.subtitle1)
+        Text(text = text, style = MaterialTheme.typography.subtitle1)
+        Text(text = "$value $unit", style = MaterialTheme.typography.subtitle1)
     }
 
 
@@ -502,10 +524,10 @@ fun LoggingRowValue(text:String,value:String,unit:String){
 
 @Preview(showBackground = true)
 @Composable
-fun TestPreviwLogging(){
+fun TestPreviwLogging() {
     CustomChart(
-        barValue = listOf(2f,2.6f,10f,-2f,5f,-5f,-10f,1.2f,2.7f,0f),
-        xAxisScale = listOf("21", "21", "22", "25", "23","24", "13", "11", "6", "9"),
+        barValue = listOf(2f, 2.6f, 10f, -2f, 5f, -5f, -10f, 1.2f, 2.7f, 0f),
+        xAxisScale = listOf("21", "21", "22", "25", "23", "24", "13", "11", "6", "9"),
         -10,
         40
     )

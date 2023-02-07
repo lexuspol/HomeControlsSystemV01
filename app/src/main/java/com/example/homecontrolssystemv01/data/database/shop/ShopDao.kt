@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.data.database
+package com.example.homecontrolssystemv01.data.database.shop
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -17,5 +17,14 @@ interface ShopDao {
 
     @Query("DELETE FROM shop_list WHERE itemId=:itemId")
     suspend fun deleteShopItem(itemId:Int)
+
+    @Query("SELECT * FROM task_list")
+    fun getTaskList(): Flow<MutableList<TaskDbModel>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTaskItem(item: TaskDbModel)
+
+    @Query("DELETE FROM task_list WHERE itemId=:itemId")
+    suspend fun deleteTaskItem(itemId:Int)
 
 }

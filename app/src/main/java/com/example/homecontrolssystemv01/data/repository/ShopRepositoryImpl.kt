@@ -2,8 +2,9 @@ package com.example.homecontrolssystemv01.data.repository
 
 import android.app.Application
 import android.util.Log
-import com.example.homecontrolssystemv01.data.database.ShopDatabase
-import com.example.homecontrolssystemv01.data.database.ShopDbModel
+import com.example.homecontrolssystemv01.data.database.shop.ShopDatabase
+import com.example.homecontrolssystemv01.data.database.shop.ShopDbModel
+import com.example.homecontrolssystemv01.data.database.shop.TaskDbModel
 import com.example.homecontrolssystemv01.domain.ShopRepository
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -56,9 +57,9 @@ class ShopRepositoryImpl(private val application: Application) : ShopRepository 
         myRef.getReference(FIREBASE_PATH_SHOP).child(id.toString()).removeValue()
     }
 
-    override suspend fun putPersonalShopItem(shopItem: ShopDbModel) {
+    override suspend fun putPersonalShopItem(item: ShopDbModel) {
         try {
-            shopDao.insertShopItem(shopItem)
+            shopDao.insertShopItem(item)
         } catch (e: Exception) {
             Log.d("HCS_putDataSetting", "Error Data Base")
         }
@@ -80,6 +81,27 @@ class ShopRepositoryImpl(private val application: Application) : ShopRepository 
 //             }
 
         return shopDao.getShopList()
+    }
+
+    override fun getTaskList(): Flow<List<TaskDbModel>> {
+        return shopDao.getTaskList()
+    }
+
+    override suspend fun putTaskItem(item: TaskDbModel) {
+        try {
+            shopDao.insertTaskItem(item)
+        } catch (e: Exception) {
+            Log.d("HCS_putDataSetting", "Error Data Base")
+        }
+    }
+
+    override suspend fun deleteTaskItem(id: Int) {
+        try {
+            shopDao.deleteTaskItem(id)
+        } catch (e: Exception) {
+            Log.d("HCS_putDataSetting", "Error Data Base")
+        }
+
     }
 
     init {

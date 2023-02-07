@@ -1,4 +1,4 @@
-package com.example.homecontrolssystemv01.data.database
+package com.example.homecontrolssystemv01.data.database.shop
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -16,7 +16,7 @@ data class ShopDbModel(
 
     companion object {
 
-        const val UNDEFINED_ID = 0
+        const val UNDEFINED_ID = -1
 
 
     }

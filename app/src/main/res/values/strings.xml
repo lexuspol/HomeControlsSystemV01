@@ -14,6 +14,7 @@
     <string name="setting">Setting</string>
     <string name="shop">Список покупок</string>
     <string name="shop_personal">Личный список</string>
+    <string name="shop_task">Заметки</string>
     <string name="shop_public">Общий список</string>
     <string name="logging">Logging</string>
     <string name="data_format">yyyy-MM-dd HH:mm:ss</string>

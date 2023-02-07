@@ -1,5 +1,6 @@
 package com.example.homecontrolssystemv01.presentation.screen.shop
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -20,82 +21,120 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.example.homecontrolssystemv01.R
-import com.example.homecontrolssystemv01.data.database.ShopDbModel
+import com.example.homecontrolssystemv01.data.database.shop.ShopDbModel
+import com.example.homecontrolssystemv01.presentation.screen.shop.components.AppBarShop
 
 @Composable
 fun ShopItemsScreen(
-    route:String,
+    route: String,
     shopList: List<ShopDbModel>?,
-    putItem:(ShopDbModel)-> Unit,
-    deleteItem:(Int) -> Unit,
+    putItem: (ShopDbModel) -> Unit,
+    deleteItem: (Int) -> Unit,
     pressOnBack: () -> Unit = {}
-){
+) {
 
-    val showDialog = remember { mutableStateOf(false)}
 
-    if (showDialog.value){
-       ShopAlertDialog(route,getNextId(shopList),onDismiss = {showDialog.value = false},putItem,deleteItem)
+    var itemShop by remember { mutableStateOf(ShopDbModel()) }
+
+    val id = if (!shopList.isNullOrEmpty()) {
+        getNextId2(shopList.map { it.itemId })
+    } else 0
+
+    var showDialog by remember { mutableStateOf(false) }
+    if (showDialog) {
+        //@Composable
+        ShopAlertDialog(
+            route, onDismiss = { showDialog = false },
+            putItem, deleteItem, itemShop
+        )
     }
     Scaffold(
         backgroundColor = MaterialTheme.colors.primarySurface,
-        topBar = { AppBarShop(route,{showDialog.value = true},pressOnBack) }
-    ) {
-            padding ->
+        topBar = {
+            //@Composable
+            AppBarShop(
+                route,
+                onDialog = {
+                    itemShop = ShopDbModel(itemId = id)
+                    showDialog = true
+                },
+                pressOnBack
+            )
+        }
+    ) { padding ->
 
-        if (!shopList.isNullOrEmpty()){
-
-        LazyColumn(modifier = Modifier.padding()){
-          //  item { Text("ShopList") }
-                items(shopList){
-                    ShopItemRow(route,shopItem = it,putItem,deleteItem)
+        if (!shopList.isNullOrEmpty()) {
+            LazyColumn(modifier = Modifier.padding()) {
+                //  item { Text("ShopList") }
+                items(shopList) { item ->
+                    ShopItemRow(
+                        shopItem = item,
+                        onLongClick = {
+                            itemShop = item
+                            showDialog = true
+                        },
+                        putItem,
+                        // deleteItem
+                    )
                 }
             }
         }
     }
 }
 
-fun getNextId(shopList: List<ShopDbModel>?):Int{
 
-    if (!shopList.isNullOrEmpty()){
-
-        val list2 = shopList.map {it.itemId}
-
-        var i = 0
-
-        run outer@{
-            for (j in 0..list2.size+1) {
-                if (!list2.contains(j)) {
-                    i = j
-                    return@outer
-                }
+//fun getNextId(shopList: List<ShopDbModel>?):Int{
+//    if (!shopList.isNullOrEmpty()){
+//        val list2 = shopList.map {it.itemId}
+//        var i = 0
+//        run outer@{
+//            for (j in 0..list2.size+1) {
+//                if (!list2.contains(j)) {
+//                    i = j
+//                    return@outer
+//                }
+//            }
+//        }
+//        return i
+//    }else return 0
+//}
+fun getNextId2(list: List<Int>): Int {
+    var i = 0
+    run outer@{
+        for (j in 0..list.size + 1) {
+            if (!list.contains(j)) {
+                i = j
+                return@outer
             }
         }
-
-        return i
-    }else return 0
-
+    }
+    return i
 }
-
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShopItemRow(route:String, shopItem: ShopDbModel,addItem:(ShopDbModel)-> Unit,deleteItem:(Int) -> Unit){
+fun ShopItemRow(
+    shopItem: ShopDbModel, onLongClick: () -> Unit,
+    putItem: (ShopDbModel) -> Unit
+)
+//deleteItem:(Int) -> Unit)
+{
 
-    val showDialog = remember { mutableStateOf(false)}
-
-    if (showDialog.value){
-        ShopAlertDialog(route,-1,onDismiss = {showDialog.value = false},addItem,deleteItem,shopItem)
-    }
+//    val showDialog = remember { mutableStateOf(false)}
+//
+//    if (showDialog.value){
+//        //ShopAlertDialog(route,-1,onDismiss = {showDialog.value = false},addItem,deleteItem,shopItem)
+//    }
 
     val colorBorder = if (shopItem.enabled) Color.White else MaterialTheme.colors.background
-    val colorCard = if (shopItem.enabled) MaterialTheme.colors.background else MaterialTheme.colors.primarySurface
+    val colorCard =
+        if (shopItem.enabled) MaterialTheme.colors.background else MaterialTheme.colors.primarySurface
 
     Card(
         modifier = Modifier
@@ -104,55 +143,63 @@ fun ShopItemRow(route:String, shopItem: ShopDbModel,addItem:(ShopDbModel)-> Unit
             .combinedClickable(
                 onClick = {
                     shopItem.enabled = !shopItem.enabled
-                    addItem(shopItem)
+                    putItem(shopItem)
                 },
                 onLongClick = {
-                    showDialog.value = true
+                    onLongClick()
+                    // showDialog.value = true
                 }
-            )
-            ,
+            ),
         // .background(Purple500)
         //         .height(50.dp),
         shape = RoundedCornerShape(8.dp), elevation = 4.dp,
-       border = BorderStroke(1.dp, colorBorder),
+        border = BorderStroke(1.dp, colorBorder),
         //contentColor = Purple500,
         backgroundColor = colorCard
     ) {
-            Row(modifier = Modifier
+        Row(
+            modifier = Modifier
                 .padding(10.dp)
                 .fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween) {
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
 
-                Text(text = "${shopItem.groupId}.",style = MaterialTheme.typography.subtitle1)
-                Text(text = shopItem.itemName,style = MaterialTheme.typography.subtitle1)
-                Text(text = shopItem.countString,style = MaterialTheme.typography.subtitle1)
-            }
+            Text(text = "${shopItem.groupId}.", style = MaterialTheme.typography.subtitle1)
+            Text(text = shopItem.itemName, style = MaterialTheme.typography.subtitle1)
+            Text(text = shopItem.countString, style = MaterialTheme.typography.subtitle1)
+        }
     }
 }
 
 @Composable
-fun ShopAlertDialog(route: String,
-    nextId:Int,onDismiss: () -> Unit,
-                    addItem:(ShopDbModel)-> Unit,deleteItem: (Int) -> Unit,
-                    item:ShopDbModel = ShopDbModel() ){
+fun ShopAlertDialog(
+    route: String,
+    onDismiss: () -> Unit,
+    addItem: (ShopDbModel) -> Unit, deleteItem: (Int) -> Unit,
+    item: ShopDbModel
+) {
 
-    val stringList = stringArrayResource(id = when (route){
-        NavShopScreen.ShopPublicScreen.route-> R.array.shopPublicGroup
-        NavShopScreen.ShopPersonalScreen.route-> R.array.shopPersonalGroup
-        else -> R.array.shopPublicGroup
-    })
+   // Log.d("HCS", item.toString())
+
+    val stringList = stringArrayResource(
+        id = when (route) {
+            NavShopScreen.ShopPublicScreen.route -> R.array.shopPublicGroup
+            NavShopScreen.ShopPersonalScreen.route -> R.array.shopPersonalGroup
+            else -> R.array.shopPublicGroup
+        }
+    )
 
     var groupId by remember { mutableStateOf(item.groupId) }
 
-    val section = if (item.groupId==0) "" else stringList[item.groupId-1]
+    val section = if (item.groupId < 1) "" else stringList[item.groupId - 1]
 
     var textItem by remember { mutableStateOf(item.itemName) }
     var textCount by remember { mutableStateOf(item.countString) }
     var textSection by remember { mutableStateOf(section) }
 
     var mExpanded by remember { mutableStateOf(false) }
-    var mTextFieldSizeSection by remember { mutableStateOf(Size.Zero)}
+    var mTextFieldSizeSection by remember { mutableStateOf(Size.Zero) }
 
     val icon = if (mExpanded)
         Icons.Filled.KeyboardArrowUp
@@ -160,8 +207,8 @@ fun ShopAlertDialog(route: String,
         Icons.Filled.KeyboardArrowDown
 
     AlertDialog(onDismissRequest = onDismiss,
-    title = {
-            },
+        title = {
+        },
         text = {
             Column(Modifier.padding(10.dp)) {
                 OutlinedTextField(
@@ -197,10 +244,10 @@ fun ShopAlertDialog(route: String,
                             // the DropDown the same width
                             mTextFieldSizeSection = coordinates.size.toSize()
                         },
-                   // enabled = !serverMode,
-                    label = {Text("Раздел")},
+                    // enabled = !serverMode,
+                    label = { Text("Раздел") },
                     trailingIcon = {
-                        Icon(icon,"contentDescription",
+                        Icon(icon, "contentDescription",
                             Modifier.clickable { mExpanded = !mExpanded })
                     }
                 )
@@ -208,41 +255,45 @@ fun ShopAlertDialog(route: String,
                     expanded = mExpanded,
                     onDismissRequest = { mExpanded = false },
                     modifier = Modifier
-                        .width(with(LocalDensity.current){mTextFieldSizeSection.width.toDp()})
+                        .width(with(LocalDensity.current) { mTextFieldSizeSection.width.toDp() })
                 ) {
                     stringList.forEachIndexed { index, map ->
                         DropdownMenuItem(onClick = {
                             textSection = map
                             mExpanded = false
-                            groupId = index+1
+                            groupId = index + 1
                         }) {
                             Text(text = map)
                         }
                     }
                 }
 
-                Row(modifier = Modifier
-                    .padding(10.dp)
-                    .fillMaxWidth(),
+                Row(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween) {
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
 
-                    Button(onClick = { onDismiss()
-                        deleteItem(item.itemId)
-                    },
-                        enabled = nextId==-1
-
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            deleteItem(item.itemId)
+                        },
+                        //enabled = nextId==-1
+                        enabled = item.groupId != -1
                     ) {
                         Text("УДАЛИТЬ")
                     }
 
-                    Button(onClick = { onDismiss()
-                        addItem(
-                            ShopDbModel(
-                                if(nextId==-1)item.itemId else nextId,
-                                textItem,
-                                groupId,
-                                textCount))})
+                    Button(onClick = {
+                        onDismiss()
+                        item.itemName = textItem
+                        item.groupId = groupId
+                        item.countString = textCount
+                        addItem(item)
+                    })
                     {
                         Text("OK")
                     }
@@ -251,39 +302,12 @@ fun ShopAlertDialog(route: String,
         },
         confirmButton = {
         }
-        )
+    )
 }
 
-
-@Composable
-fun AppBarShop(route:String,onDialog: () -> Unit,pressOnBack: () -> Unit = {}){
-    TopAppBar(
-        elevation = 4.dp,
-        //backgroundColor = Purple200,
-        ){
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,){
-            IconButton(onClick = {pressOnBack()}) {
-                Icon(Icons.Filled.ArrowBack, null)
-            }
-            Text(stringResource(when(route){
-                NavShopScreen.ShopPublicScreen.route->R.string.shop_public
-                NavShopScreen.ShopPersonalScreen.route->R.string.shop_personal
-                else ->  R.string.shop
-            }))
-            IconButton(onClick = {
-                onDialog()
-            }) {
-                Icon(Icons.Filled.Add, null)
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
-fun ShopTestPreview(){
+fun ShopTestPreview() {
 }
 

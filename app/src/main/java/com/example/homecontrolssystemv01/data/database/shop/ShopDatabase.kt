@@ -1,12 +1,12 @@
-package com.example.homecontrolssystemv01.data.database
+package com.example.homecontrolssystemv01.data.database.shop
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [ShopDbModel::class],
-    version = 1,
+@Database(entities = [ShopDbModel::class,TaskDbModel::class],
+    version = 2,
     exportSchema = false)
 abstract class ShopDatabase: RoomDatabase() {
     companion object{

@@ -70,7 +70,11 @@ fun ShopScreen(
                     deleteItem = { viewModel.deletePersonaShopItemUI(it) }
                 ) { pressOnBack() }
 
-                ShopScreenTab.NOTES -> ShopNotesScreen()
+                ShopScreenTab.NOTES -> ShopNotesScreen(
+                    route = NavShopScreen.TaskScreen.route,
+                    taskList = viewModel.taskList
+                ){ pressOnBack() }
+
             }
         }
 
@@ -104,5 +108,6 @@ enum class ShopScreenTab(
 
 sealed class NavShopScreen(val route: String) {
     object ShopPublicScreen : NavShopScreen("ShopPublicScreen")
-    object ShopPersonalScreen : NavShopScreen("ShopPersonalScree")
+    object ShopPersonalScreen : NavShopScreen("ShopPersonalScreen")
+    object TaskScreen : NavShopScreen("TaskScreen")
 }

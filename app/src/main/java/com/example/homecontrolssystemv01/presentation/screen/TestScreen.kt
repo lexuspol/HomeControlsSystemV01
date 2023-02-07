@@ -126,19 +126,19 @@ fun TestCard(){
 @Composable
 fun PreviewIcons(){
     Column() {
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = { }) {
             Icon(Icons.Filled.Share,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
         }
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = {  }) {
             Icon(Icons.Filled.Person,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
         }
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = {  }) {
             Icon(Icons.Filled.LocationOn,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
         }
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = {  }) {
             Icon(Icons.Filled.Star,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
         }
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = {  }) {
             Icon(Icons.Filled.ShoppingCart,contentDescription = null,modifier = Modifier.size(ButtonDefaults.IconSize))
         }
 

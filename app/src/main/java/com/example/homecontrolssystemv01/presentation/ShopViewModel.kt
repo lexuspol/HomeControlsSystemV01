@@ -6,9 +6,11 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.homecontrolssystemv01.data.database.ShopDbModel
+import com.example.homecontrolssystemv01.data.database.shop.ShopDbModel
+import com.example.homecontrolssystemv01.data.database.shop.TaskDbModel
 import com.example.homecontrolssystemv01.data.repository.ShopRepositoryImpl
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 
@@ -21,9 +23,12 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     //shopList
     var shopPublicList by mutableStateOf(emptyList<ShopDbModel>())
     var shopPersonalList by mutableStateOf(emptyList<ShopDbModel>())
-    private val emptyList = listOf<ShopDbModel>()
+    var taskList by mutableStateOf(emptyList<TaskDbModel>())
+    private val emptyShopList = listOf<ShopDbModel>()
+    private val emptyTaskList = listOf<TaskDbModel>()
     private var jobGetPublicShopList: Job? = null
     private var jobGetPersonalShopList: Job? = null
+    private var jobGetTaskList: Job? = null
 
     //    //Public Screen
 //    fun getPublicShopListUI(): SnapshotStateList<ShopDbModel> {
@@ -35,7 +40,7 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
             repository.getPublicShopList().collect { list ->
                 Log.d("HCS", "Public - launch")
                 //записываем пустой лист чтобы Compouse видел изменение внутри ShopItem
-                shopPublicList = emptyList
+                shopPublicList = emptyShopList
                 shopPublicList = list.sortedWith(compareBy({ !it.enabled }, { it.groupId }))
             }
         }
@@ -46,8 +51,19 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
             repository.getPersonalShopList().collect { list ->
                 Log.d("HCS", "Personal - launch")
                 //записываем пустой лист чтобы Compouse видел изменение внутри ShopItem
-                shopPersonalList = emptyList
+                shopPersonalList = emptyShopList
                 shopPersonalList = list.sortedWith(compareBy({ !it.enabled }, { it.groupId }))
+            }
+        }
+    }
+
+    fun getTaskListUI() {
+        jobGetTaskList = viewModelScope.launch {
+            repository.getTaskList().collect { list ->
+                Log.d("HCS", "Task - launch")
+                //записываем пустой лист чтобы Compouse видел изменение внутри ShopItem
+                taskList = emptyTaskList
+                taskList = list.sortedWith(compareBy({ !it.enabled }, { it.groupId }))
             }
         }
     }
@@ -55,6 +71,7 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     fun closeShopScreenUI() {
         jobGetPublicShopList?.cancel()
         jobGetPersonalShopList?.cancel()
+        jobGetTaskList?.cancel()
     }
 
     //Public Screen
@@ -73,6 +90,16 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
     fun deletePersonaShopItemUI(id: Int) {
         viewModelScope.launch { repository.deletePersonalShopItem(id) }
     }
+
+    //Task Screen
+    fun putTaskItemUI(item: TaskDbModel) {
+        viewModelScope.launch { repository.putTaskItem(item) }
+    }
+    fun deleteTaskItemUI(id: Int) {
+        viewModelScope.launch { repository.deleteTaskItem(id) }
+    }
+
+
 
     private val _selectedTabShop: MutableState<Int> = mutableStateOf(0)
     val selectedTabShop: State<Int> get() = _selectedTabShop
