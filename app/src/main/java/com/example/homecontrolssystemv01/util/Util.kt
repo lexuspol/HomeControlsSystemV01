@@ -3,6 +3,7 @@ package com.example.homecontrolssystemv01.util
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.ui.graphics.Color
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.DataDao
@@ -13,6 +14,7 @@ import com.example.homecontrolssystemv01.domain.model.data.DataContainer
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
+import com.example.homecontrolssystemv01.presentation.screen.data.MaxMinAverage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -97,10 +99,7 @@ fun difTime(date:String):Long{
 }
 
 fun stringLimittoFlout(stringLimit:String):Float {
-
     return stringLimit.toFloatOrNull()?.times(100)?.roundToInt()?.div(100.0)?.toFloat() ?: 0F
-
-
 }
 
 fun countEnergy(count:UInt?):String {
@@ -353,10 +352,65 @@ fun createMessageListLimit(
     }
 
 fun convertLongToTime(time: Long): String {
-    val date = Date(time)
-    val format = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
-    return format.format(date)
+    return try {
+        val date = Date(time)
+        val format = SimpleDateFormat("yyyy.MM.dd HH:mm:ss")
+        format.format(date)
+    }catch (e:Exception){
+        "error time"
+    }
 }
+
+fun convertLongToTimeFormat(time: Long,format:String): String {
+    return try {
+        val date = Date(time)
+        val format = SimpleDateFormat(format)
+        format.format(date)
+    }catch (e:Exception){
+        "error format"
+    }
+
+
+}
+
+fun getColorShopItem(groupId:Int): Color {
+    return  when(groupId){
+        1 -> Color.Blue
+        2 -> Color.Cyan
+        3 -> Color.Gray
+        4 -> Color.Green
+        5 -> Color.Red
+        6 -> Color.Yellow
+        7 -> Color.Magenta
+        else -> Color.DarkGray
+    }
+}
+
+fun convertMillisecondsToTime(milliseconds:String?):String {
+
+    return try {
+
+        val timeLong = milliseconds?.toLong() ?: 0
+
+        val secondCount = timeLong / 1000
+        val minuteCount = secondCount / 60
+        val hour = minuteCount / 60
+        val minute = minuteCount - hour * 60
+        val second = secondCount - minuteCount * 60
+
+//            val calendar = Calendar.getInstance()
+//            calendar.time = Date()
+//            val hour = calendar.get(Calendar.HOUR)
+//            val minute = calendar.get(Calendar.MINUTE)
+//            val second = calendar.get(Calendar.SECOND)
+
+        String.format("%d:%02d:%02d", hour, minute, second)
+
+    } catch (e: Exception) {
+        milliseconds.toString()
+    }
+}
+
 
 
 fun convertStringTimeToLong(time:String,dataFormat:String):Long{
@@ -371,11 +425,42 @@ fun convertStringTimeToLong(time:String,dataFormat:String):Long{
     }
 }
 
+fun createMinMaxAverage(dataType: DataType,list:List<Pair<Long,String>>):MaxMinAverage?{
+    return try {
+        when(dataType){
+            DataType.REAL ->{
+                val listValue = mutableListOf<Float>()
+                list.forEach {
+                    listValue.add(it.second.toFloat())
+                }
+                MaxMinAverage(
+                    listValue.maxOrNull().toString(),
+                    listValue.minOrNull().toString(),
+                    ((listValue.average() * 100).roundToInt().toFloat() / 100).toString()
+                )
+            }
+            DataType.TIME ->{
+                val listValue = mutableListOf<Long>()
+                list.forEach {
+                    listValue.add(it.second.toLong())
+                }
+                MaxMinAverage(
+                    listValue.maxOrNull().toString(),
+                    listValue.minOrNull().toString(),
+                    listValue.average().toLong().toString()
+                )
+            }
+            else -> null
+        }
+        }catch (e:Exception){
+            null
+    }
+}
 
 
 fun createAlarmWord(data: DataModel?, setting:DataSetting?):String?{
 
-    val len = 16
+    val len = 16//счет с нуля
 
 return if (data !=null && setting !=null){
 

@@ -4,7 +4,8 @@ import androidx.compose.runtime.MutableState
 import androidx.lifecycle.LiveData
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
-import com.example.homecontrolssystemv01.domain.model.logging.LogItem
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingValue
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingID
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
@@ -32,9 +33,8 @@ interface DataRepository {
    suspend fun deleteMessage(id:Int)
 
    suspend fun deleteData(id:Int)
-
-   fun getLogMap(idKey:String): MutableState<Map<String, LogItem>>
-   fun getLogIdList(): MutableState<List<String>>
-   fun deleteLogItem(idKey:String)
+   fun getLoggingValue(logKey:LoggingID): MutableState<LoggingValue>
+   fun getLoggingIdList(): MutableState<List<LoggingID>>
+   fun deleteLoggingValue(logKey:LoggingID)
 
 }

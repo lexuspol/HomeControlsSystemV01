@@ -21,12 +21,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.homecontrolssystemv01.DataID
+import com.example.homecontrolssystemv01.domain.enum.ControlValue
 import com.example.homecontrolssystemv01.presentation.screen.CardSettingElement
 import com.example.homecontrolssystemv01.domain.enum.DataType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataContainer
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
 import com.example.homecontrolssystemv01.domain.model.message.Message
+import com.example.homecontrolssystemv01.domain.model.message.ModeConnect
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.setting.SystemSetting
 import com.example.homecontrolssystemv01.util.convertIntToBinaryString
@@ -116,6 +118,8 @@ fun LazyColumnCreate(
 
         CardSettingElement {
 
+            val connectMode = giveDataById(listDataContainer, DataID.connectMode.id).dataModel.value
+
             Box(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier
@@ -126,13 +130,33 @@ fun LazyColumnCreate(
 
 
                     ) {
+
+                    if (connectMode == ModeConnect.LOCAL.name){
+                        Text(
+                            text = "${giveDataById(listDataContainer, DataID.lastTimeUpdate.id,).dataModel.value}",
+                            style = MaterialTheme.typography.subtitle1
+                        )
+                    }else {
+                        Button(
+                            onClick = {
+                        onControl(ControlInfo(DataID.lastTimeUpdate.id, ControlValue.GATE_START.value))
+                            },
+                        ) {
+                            Text(
+                                text = "${
+                                    giveDataById(
+                                        listDataContainer,
+                                        DataID.lastTimeUpdate.id,
+                                    ).dataModel.value
+                                }",
+                                style = MaterialTheme.typography.subtitle1
+                            )
+                        }
+                    }
+
+
                     Text(
-                        text = "${giveDataById(listDataContainer, DataID.lastTimeUpdate.id,).dataModel.value}",
-                        // Modifier.padding(start = 5.dp),
-                        style = MaterialTheme.typography.subtitle1
-                    )
-                    Text(
-                        text = "${giveDataById(listDataContainer, DataID.connectMode.id,).dataModel.value}",
+                        text = "$connectMode",
                         // Modifier.padding(start = 5.dp),
                         style = MaterialTheme.typography.subtitle1
                     )
@@ -205,7 +229,7 @@ fun DataRow(
  //           modifier = Modifier.background(Purple500),
          //   color = Purple700
         ) {
-            
+
             Column(
                 Modifier
                     .padding(10.dp)
@@ -394,6 +418,7 @@ private fun MyAlertDialog(
                                             Text(text = "Type: ${dataModel.type}")
 
 
+
                                         }
                                     }
 
@@ -553,8 +578,8 @@ private fun MyAlertDialog(
                                             )
                                         ) { index, string ->
                                             Row(
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth(),
 //                                        .padding(10.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -563,7 +588,7 @@ private fun MyAlertDialog(
                                                 Text(
                                                     text = string,
                                                     //style = MaterialTheme.typography.body1.merge(),
-                                                    //modifier = Modifier.padding(start = 16.dp)
+                                                    modifier = Modifier.weight(1f)
                                                 )
 
                                                 Switch(

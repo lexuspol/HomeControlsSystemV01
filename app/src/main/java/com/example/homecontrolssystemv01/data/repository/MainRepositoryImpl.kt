@@ -17,7 +17,8 @@ import com.example.homecontrolssystemv01.data.workers.RefreshDataWorker
 import com.example.homecontrolssystemv01.domain.DataRepository
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
-import com.example.homecontrolssystemv01.domain.model.logging.LogItem
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingValue
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingID
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
@@ -50,15 +51,13 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
     private val myRef = Firebase.database(FIREBASE_URL)//.getReference(FIREBASE_PATH)
     private var addRemoteListener = false
 
-    private var addLogListener = false
-    private var addLogListenerId = ""
+    private val loggingValueMS = mutableStateOf(LoggingValue())
 
-    private val logMapMS = mutableStateOf<Map<String, LogItem>>(mapOf())
-    private val logIdListMS = mutableStateOf<List<String>>(listOf())
+    private val loggingIdListMS = mutableStateOf<List<LoggingID>>(listOf())
 
     //создаем слушателя для Firebase, в другом месте сложно, так как запись в базу происходит в карутине
     //запускаем слушателя в loadData
-    private val valueEventListener: ValueEventListener = object : ValueEventListener {
+    private val controlEventListener: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
 
             val dataFirebaseID = snapshot.child("id").getValue<Int>() ?: 0
@@ -76,17 +75,18 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
         }
     }
 
-
-    private fun getEventListener(key: String): ValueEventListener {
+    private fun getEventListenerLogging(key: String): ValueEventListener {
         return object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 try {
                     when (key) {
-                        "id" -> readLogIdList(snapshot)
-                        "value" -> readLogValue(snapshot)
+                        "id" -> getLoggingIdListFromRemoteBase(snapshot)
+                        "value" -> getLoggingValueFromRemoteBase(snapshot)
                     }
                 } catch (e: Exception) {
                     Toast.makeText(application, "Remote base error", Toast.LENGTH_LONG).show()
+                    //val test = "test"
+                    //test.toInt()
                 }
             }
 
@@ -97,38 +97,49 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
         }
     }
 
-    fun readLogIdList(snapshot: DataSnapshot) {
-        val listIndex = mutableListOf<String>()
-        snapshot.children.forEach { id ->
-            val idLog = id.key
-            if (idLog != null) {
-                listIndex.add(idLog)
+    fun getLoggingIdListFromRemoteBase(snapshot: DataSnapshot) {
+        val listLoggingId = mutableListOf<LoggingID>()
+        val mapSnapshot = snapshot.getValue<Map<String,Map<String,Map<String,Map<String,String>>>>>()
+
+        mapSnapshot?.forEach { id->
+            id.value.forEach { logType->
+                logType.value.forEach { dataType->
+                    listLoggingId.add(LoggingID(id.key,logType.key,dataType.key))
+                }
             }
         }
-        logIdListMS.value = listIndex.toList()
+
+        loggingIdListMS.value = listLoggingId.toList()
+
+        //Log.d("HCS",listLoggingId.toString())
     }
 
-    fun readLogValue(snapshot: DataSnapshot) {
-        val keySnapshot = snapshot.key.toString()
-        //Log.d("HCS","snapshot.key = ${snapshot.key}")
-        val valueLog = snapshot.getValue<Map<String, String>>()
+    fun getLoggingValueFromRemoteBase(snapshot: DataSnapshot) {
 
-        if (!valueLog.isNullOrEmpty()) {
-            val valueList = mutableListOf<Pair<Long, String>>()
-            val logMap = mutableMapOf<String, LogItem>()
-            valueLog.forEach { map ->
+        val valueLogMap = snapshot.getValue<Map<String, String>>()
+        val valueType = snapshot.key
+        val valueLogList = mutableListOf<Pair<Long, String>>()
+
+        if (!valueLogMap.isNullOrEmpty() && valueType != null) {
+
+            //делаем тут преобразование и сортировку по дате
+            valueLogMap.forEach { map ->
                 try {
-                    valueList.add(Pair(map.key.toLong(), map.value))
+                    valueLogList.add(Pair(map.key.toLong(), map.value))
                 } catch (e: Exception) {
                     Log.w("HCS_FIREBASE_ERROR", "Error cast long value", e)
                 }
+
+                valueLogList.sortByDescending { it.first }
+
+                val logItem = LoggingValue(valueLogList.toList(), valueType)
+
+                loggingValueMS.value = logItem
+
+                //logMapMSrev1.value = valueLog
             }
-            valueList.sortByDescending { it.first }
-            logMap[keySnapshot] = LogItem(valueList.toList())
-            logMapMS.value = logMap.toMap()
         }
     }
-
 
     override fun getDataList(): LiveData<List<DataModel>> {
         return Transformations.map(dataDao.getValueList()) { list ->
@@ -159,32 +170,40 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
         dataDao.deleteData(id)
     }
 
-    override fun getLogMap(idKey: String): MutableState<Map<String, LogItem>> {
-        Log.d("HCS", "fun getLogMap")
-        if (addLogListener && idKey != "" && addLogListenerId != idKey) {
-            myRef.getReference(FIREBASE_PATH_LOG).child(idKey)
-                .addListenerForSingleValueEvent(getEventListener("value"))
+    override fun getLoggingValue(logKey:LoggingID): MutableState<LoggingValue> {
 
-            addLogListenerId = idKey
-            addLogListener = true
+        //удаляем все данные, чтобы при загрузке новых не видны были на экране старые
+        loggingValueMS.value = LoggingValue()
+
+        if (logKey.id != LoggingID.UNDEFINED){
+
+            myRef.getReference(FIREBASE_PATH_LOG)
+                .child(logKey.id)
+                .child(logKey.loggingType)
+                .child(logKey.dataType).ref
+                .addListenerForSingleValueEvent(getEventListenerLogging("value"))
+
+           Log.d("HCS", "getLogMap - OK")
+        }else {
+           // Log.d("HCS", "getLogMapRev1 - NOT OK")
         }
-        return logMapMS
+        return loggingValueMS
     }
 
-    override fun getLogIdList(): MutableState<List<String>> {
-
-        val test = "test"
-
-        test.toInt()
-
-        //myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(logIdEventListener)
-        myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(getEventListener("id"))
-        Log.d("HCS", "fun getLogIdList()")
-        return logIdListMS
+    override fun getLoggingIdList(): MutableState<List<LoggingID>> {
+        myRef.getReference(FIREBASE_PATH_LOG).addListenerForSingleValueEvent(getEventListenerLogging("id"))
+        Log.d("HCS", "fun getLogIdList - OK")
+        return loggingIdListMS
     }
 
-    override fun deleteLogItem(idKey: String) {
-        myRef.getReference(FIREBASE_PATH_LOG).child(idKey).removeValue()
+    override fun deleteLoggingValue(logKey: LoggingID) {
+        if (logKey.id != LoggingID.UNDEFINED) {
+            myRef.getReference(FIREBASE_PATH_LOG)
+                .child(logKey.id)
+                .child(logKey.loggingType)
+                .child(logKey.dataType)
+                .removeValue()
+        }
     }
 
     override fun getDataSetting(): LiveData<List<DataSetting>> {
@@ -218,7 +237,7 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
                 //но в воркере прверка на главное устройство
                 //только главное устройство может записать команду в контроллер
 
-                myRef.getReference(FIREBASE_PATH_CONTROL).addValueEventListener(valueEventListener)
+                myRef.getReference(FIREBASE_PATH_CONTROL).addValueEventListener(controlEventListener)
                 //Log.d("HCS","addListener")
 
                 addRemoteListener = false
@@ -226,7 +245,7 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
 
         } else {
             workManager.cancelUniqueWork(PeriodicDataWorker.NAME_PERIODIC)
-            myRef.getReference(FIREBASE_PATH_CONTROL).removeEventListener(valueEventListener)
+            myRef.getReference(FIREBASE_PATH_CONTROL).removeEventListener(controlEventListener)
         }
 
     }
@@ -297,7 +316,6 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
 
     init {
         addRemoteListener = true// разобраться нужно ли это делать тут или сразу объявить в поле
-        addLogListener = true
     }
 
     companion object {
@@ -305,7 +323,7 @@ class MainRepositoryImpl(private val application: Application) : DataRepository 
             "https://homesystemcontrolv01-default-rtdb.asia-southeast1.firebasedatabase.app"
         const val FIREBASE_PATH = "data"
         const val FIREBASE_PATH_CONTROL = "controlRemove"
-        const val FIREBASE_PATH_LOG = "logging"
+        const val FIREBASE_PATH_LOG = "log"
     }
 
 }

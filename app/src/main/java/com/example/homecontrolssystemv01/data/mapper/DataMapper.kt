@@ -13,6 +13,7 @@ import com.example.homecontrolssystemv01.domain.model.data.DataModel
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.google.gson.Gson
+import java.util.*
 
 class DataMapper {
 
@@ -147,38 +148,59 @@ class DataMapper {
         return dateReturn
     }
 
-    fun convertTimeServerToTimeUI(time:String?):String{
-        if (time == null) return "00:00"
+    private fun convertTimeServerToTimeUI(time:String?):String{
 
-        //T#2H_5M_8S_815MS
-        //T#0MS
-        val indexTimeFirst = time.indexOf("#")
-        val index_H = time.indexOf("h")
-        val index_M = time.indexOf("m")
-        val index_S = time.indexOf("s")
+        return try {
 
-        when{
-            indexTimeFirst!=1||(index_S-index_M)<3 -> return "00:00"
-            index_H>2&&index_M>5&&index_S>8 -> {
-                return "${time.substring(indexTimeFirst+1,index_H)}h " +
-                        "${time.substring(index_H+2,index_M)}m " +
-                        "${time.substring(index_M+2,index_S)}s"
-            }
-            index_H>2&&index_S>5 -> {
-                return "${time.substring(indexTimeFirst+1,index_H)}h " +
-                        "${time.substring(index_H+2,index_S)}s"
-            }
-            index_M>2&&index_S>5 -> {
-                return "${time.substring(indexTimeFirst+1,index_M)}m " +
-                        "${time.substring(index_M+2,index_S)}s"
-            }
-            index_S>2 -> {
-               return "${time.substring(indexTimeFirst+1,index_S)}s"
-            }
+            val timeLong = time?.toLong() ?: 0
 
-            else ->return "00:00"
+            val secondCount = timeLong/1000
+            val minuteCount = secondCount/60
+            val hour = minuteCount/60
+            val minute = minuteCount - hour*60
+            val second = secondCount - minuteCount*60
 
+//            val calendar = Calendar.getInstance()
+//            calendar.time = Date()
+//            val hour = calendar.get(Calendar.HOUR)
+//            val minute = calendar.get(Calendar.MINUTE)
+//            val second = calendar.get(Calendar.SECOND)
+
+            "$hour:$minute:$second"
+
+        }catch (e:Exception){
+            "error"
         }
+
+//        //T#2H_5M_8S_815MS
+//        //T#0MS
+//        val indexTimeFirst = time.indexOf("#")
+//        val index_H = time.indexOf("h")
+//        val index_M = time.indexOf("m")
+//        val index_S = time.indexOf("s")
+//
+//        when{
+//            indexTimeFirst!=1||(index_S-index_M)<3 -> return "00:00"
+//            index_H>2&&index_M>5&&index_S>8 -> {
+//                return "${time.substring(indexTimeFirst+1,index_H)}h " +
+//                        "${time.substring(index_H+2,index_M)}m " +
+//                        "${time.substring(index_M+2,index_S)}s"
+//            }
+//            index_H>2&&index_S>5 -> {
+//                return "${time.substring(indexTimeFirst+1,index_H)}h " +
+//                        "${time.substring(index_H+2,index_S)}s"
+//            }
+//            index_M>2&&index_S>5 -> {
+//                return "${time.substring(indexTimeFirst+1,index_M)}m " +
+//                        "${time.substring(index_M+2,index_S)}s"
+//            }
+//            index_S>2 -> {
+//               return "${time.substring(indexTimeFirst+1,index_S)}s"
+//            }
+//
+//            else ->return "00:00"
+//
+//        }
 
     }
 

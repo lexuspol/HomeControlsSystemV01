@@ -165,10 +165,8 @@ class RefreshDataWorker(
 
         if (!remoteControl){
             when(idControl){
-                DataID.buttonWicketUnlock.id ->
-                    //refControl.child("$idControl").setValue(ControlValue.GATE_START.value)
-                    refControl.setValue(
-                        ControlRemote(idControl,ControlValue.GATE_START.value))
+                DataID.buttonWicketUnlock.id -> refControl.setValue(ControlRemote(idControl,ControlValue.GATE_START.value))
+                DataID.lastTimeUpdate.id -> refControl.setValue(ControlRemote(idControl,ControlValue.GATE_START.value))
             }
         }
 
@@ -284,11 +282,13 @@ class RefreshDataWorker(
 
     private suspend fun getLocalData(firstCycle:Boolean):List<DataDbModel>?{
 
+        val firstCycleRemoteControl = firstCycle && remoteControl
+
         try {
 
             val jsonContainer = when{
                firstCycle && !remoteControl -> writeControlToApiService()
-                firstCycle && remoteControl -> {
+                firstCycleRemoteControl -> {
                     val json = apiService.getData()
                     val data = mapper.mapJsonContainerToListValue(json)
                     val mainDeviceName = data.find { it.id == DataID.mainDeviceName.id }?.value
@@ -311,8 +311,15 @@ class RefreshDataWorker(
 
             }
 
-            return mapper.mapJsonContainerToListValue(jsonContainer).map {mapper.valueDtoToDbModel(it)
+            val dataDbModelList = mapper.mapJsonContainerToListValue(jsonContainer).map {mapper.valueDtoToDbModel(it)}
+
+            //после каждого удаленного управления, обновляем данные на удаленном сервере
+            if (firstCycleRemoteControl) {
+                myRef.getReference(MainRepositoryImpl.FIREBASE_PATH).setValue(dataDbModelList)
             }
+
+            return dataDbModelList
+
 
         }catch (e:Exception){
 

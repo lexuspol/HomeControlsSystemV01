@@ -10,6 +10,7 @@ import androidx.work.*
 import com.example.homecontrolssystemv01.DataID
 import com.example.homecontrolssystemv01.R
 import com.example.homecontrolssystemv01.data.database.AppDatabase
+import com.example.homecontrolssystemv01.data.database.DataDbModel
 import com.example.homecontrolssystemv01.data.mapper.DataMapper
 import com.example.homecontrolssystemv01.data.network.ApiFactory
 import com.example.homecontrolssystemv01.data.repository.MainRepositoryImpl
@@ -42,6 +43,7 @@ class PeriodicDataWorker(
         context.getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
     private val apiService = ApiFactory.apiService
+    private val mapper = DataMapper()
 
     private val dataDao = AppDatabase.getInstance(context).dataDao()
 
@@ -56,78 +58,33 @@ class PeriodicDataWorker(
     private var logDay = 0
 
     private fun getLoggingValueList(workerParameters: WorkerParameters): List<LogSetting> {
-
         val list = mutableListOf<LogSetting>()
         LogKey.values().forEach {
             list.add(
                 LogSetting(workerParameters.inputData.getInt(it.name, 0), it.name)
             )
         }
-        //Log.d("HCS","запуск - getLoggingValueList")
         return list.toList()
     }
 
-//    private val notificationManager =
-//        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    private val mapper = DataMapper()
-
-//    fun notification (time: String): Notification {
-//
-//        createNotificationChannel()
-//
-//        //val intent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
-//        return NotificationCompat.Builder(applicationContext,CHANNEL_ID)
-//            .setContentTitle("Time update")
-//            .setContentText(time)
-//            .setSmallIcon(R.drawable.ic_launcher_background)
-//            //.addAction(,"cancel", intent)
-//            .build()
-//    }
-
-//    private fun createNotificationChannel() {
-//        // Create the NotificationChannel, but only on API 26+ because
-//        // the NotificationChannel class is new and not in the support library
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            val name = "name"
-//                //getString(R.string.channel_name)
-//            val descriptionText = "description"
-//                //getString(R.string.channel_description)
-//            val importance = NotificationManager.IMPORTANCE_DEFAULT
-//            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-//                description = descriptionText
-//            }
-//            // Register the channel with the system
-//            notificationManager.createNotificationChannel(channel)
-//        }
-//    }
-
-//    private fun createForegroundInfo(progress: String): ForegroundInfo {
-//        return ForegroundInfo(notId, notification(progress))
-//    }
-
-
-    private val logRemovedEventListener: ValueEventListener = object : ValueEventListener {
+    //удаление лишних логов
+    private val logRemovedEventListenerRev1: ValueEventListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
 
-            val maxIndex = 150
-            snapshot.children.forEach { id ->
-                //Log.d("HCS","count = ${id.childrenCount}")
-                val listIndex = mutableListOf<String>()
+            val maxIndex = 200
+           // Log.d("HCS", "id = ${snapshot.key} count = ${snapshot.childrenCount}")
+            val listIndex = mutableListOf<String>()
 
-                if (id.childrenCount > maxIndex) {
-                    id.children.forEachIndexed { index, dataSnapshot ->
-                        if (index < (id.childrenCount - maxIndex)) {
-                            listIndex.add(dataSnapshot.key.toString())
-                        }
+            if (snapshot.childrenCount > maxIndex) {
+                snapshot.children.forEachIndexed { index, dataSnapshot ->
+                    if (index < (snapshot.childrenCount - maxIndex)) {
+                        listIndex.add(dataSnapshot.key.toString())
                     }
                 }
-                listIndex.forEach {
-                    id.ref.child(it).removeValue()
-                }
             }
-
-
+            listIndex.forEach {
+                snapshot.ref.child(it).removeValue()
+            }
         }
 
         override fun onCancelled(error: DatabaseError) {
@@ -138,23 +95,7 @@ class PeriodicDataWorker(
 
     override suspend fun doWork(): Result {
 
-        val loggingPeriodicIdList = mutableListOf<Int>()
-        val loggingLastDayIdList = mutableListOf<Int>()
-
         try {
-
-            //разделяем на типы логи
-            logSettingList.forEach {
-
-                when (LogKey.valueOf(it.logKey).type) {
-                    LoggingType.LOGGING_PERIODIC -> loggingPeriodicIdList.add(it.logId)
-                    LoggingType.LOGGING_ONE_DAY -> loggingLastDayIdList.add(it.logId)
-                    else -> {}
-                }
-            }
-
-
-            // Log.d("HCS",loggingValueList.toString())
 
             val ssid = wifiManager.connectionInfo.ssid
 
@@ -167,9 +108,6 @@ class PeriodicDataWorker(
                 }
                 myRef.getReference(MainRepositoryImpl.FIREBASE_PATH).setValue(dataDbModelList)
 
-                myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
-                    .addListenerForSingleValueEvent(logRemovedEventListener)
-
                 val mainDeviceName =
                     dataDbModelList.find { it.id == DataID.mainDeviceName.id }?.value
 
@@ -178,76 +116,74 @@ class PeriodicDataWorker(
                     val timeFromApiServer = mapper.convertDateServerToDateUI(dataDbModelList.find {
                         it.id == DataID.lastTimeUpdate.id
                     }?.value, dataFormat)
+
                     val timeLong = convertStringTimeToLong(timeFromApiServer, dataFormat)
-
                     if (timeLong != -1L) {
-
-                        val calendar = Calendar.getInstance()
-                        calendar.time = Date(timeLong)
-
-                        val calendarDay = calendar.get(Calendar.DAY_OF_MONTH)
-
-                        // Log.d("HCS","logDay1 = $logDay, calendarDay1 = $calendarDay")
-
-                        dataDbModelList.forEach {
-
-                            if (loggingPeriodicIdList.contains(it.id)) {
-
-                                //val type = DataType.INT
-
-                                val path = "${it.id}" +
-                                        "${LoggingType.LOGGING_PERIODIC.separator}" +
-                                        LoggingType.LOGGING_PERIODIC.name
-
-                                myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
-                                    .child(path)
-                                    .child(timeLong.toString())
-                                    .setValue(it.value.toString())
-                                //Log.d("HCS","период запись элемент с ID - ${it.id}")
-                            }
-
-                            if (loggingLastDayIdList.contains(it.id) && logDay != calendarDay) {
-
-                                val path = "${it.id}" +
-                                        "${LoggingType.LOGGING_PERIODIC.separator}" +
-                                        LoggingType.LOGGING_ONE_DAY.name
-
-                                myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
-                                    .child(path)
-                                    .child(timeLong.toString())
-                                    .setValue(it.value.toString())
-                            }
-
-//                                    when(it.id){
-//                                        100,101,124 -> {
-//                                            myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
-//                                                .child(it.id.toString())
-//                                                .child(timeLong.toString())
-//                                                .setValue(it.value.toString())
-//                                        }
-//                                    }
-                        }
-
-                        sharedPref.edit().putInt(KEY_LOG_DAY, calendarDay).apply()
-                        // Log.d("HCS","logDay2 = $logDay, calendarDay2 = $calendarDay")
+                        writeLogToRemoveServer(dataDbModelList, timeLong)
                     }
-
-                    //
-
                 }
-
                 insertMessage(_context, dataDao, 1007)
-
             }
-
-            //setForeground(createForegroundInfo("Download"))
 
         } catch (e: Exception) {
             Log.d("HCS_PeriodicDataWorker", e.toString())
             insertMessage(_context, dataDao, 1006)
         }
-
         return Result.success()
+    }
+
+    private fun writeLogToRemoveServer(dataDbModelList: List<DataDbModel>, timeLong: Long) {
+
+        val loggingPeriodicIdList = mutableListOf<Int>()
+        val loggingLastDayIdList = mutableListOf<Int>()
+        val calendar = Calendar.getInstance()
+        calendar.time = Date(timeLong)
+        val calendarDay = calendar.get(Calendar.DAY_OF_MONTH)
+
+        //разделяем на типы логи
+        logSettingList.forEach {
+            when (LogKey.valueOf(it.logKey).type) {
+                LoggingType.LOGGING_PERIODIC -> loggingPeriodicIdList.add(it.logId)
+                LoggingType.LOGGING_ONE_DAY -> loggingLastDayIdList.add(it.logId)
+                else -> {}
+            }
+        }
+
+        dataDbModelList.forEach { data ->
+
+            val dataType = DataType.values().find { it.dataTypeNumber == data.type }
+            val idPath = data.id.toString()
+
+            if (dataType != null) {
+
+                if (loggingPeriodicIdList.contains(data.id)) {
+
+                    val periodicRef = myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
+                        .child(idPath)
+                        .child(LoggingType.LOGGING_PERIODIC.name)
+                        .child(dataType.name)
+
+                    periodicRef.child(timeLong.toString()).setValue(data.value.toString())
+                    periodicRef.addListenerForSingleValueEvent(logRemovedEventListenerRev1)
+
+                }
+
+                if (loggingLastDayIdList.contains(data.id) && logDay != calendarDay) {
+
+                    val oneDayRef = myRef.getReference(MainRepositoryImpl.FIREBASE_PATH_LOG)
+                        .child(idPath)
+                        .child(LoggingType.LOGGING_ONE_DAY.name)
+                        .child(dataType.name)
+
+                    oneDayRef.child(timeLong.toString()).setValue(data.value.toString())
+                    oneDayRef.addListenerForSingleValueEvent(logRemovedEventListenerRev1)
+                }
+            }
+
+        }
+
+        sharedPref.edit().putInt(KEY_LOG_DAY, calendarDay).apply()
+       // Log.d("HCS", "logDay2 = $logDay, calendarDay2 = $calendarDay")
     }
 
 

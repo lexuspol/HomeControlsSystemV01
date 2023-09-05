@@ -1,6 +1,7 @@
 package com.example.homecontrolssystemv01.presentation.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -31,6 +32,9 @@ fun ControlListScreen(
 
    // val listDataLight = listof(DataLightControl)
 
+
+
+
         Column(modifier = modifier,
                 verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -48,6 +52,7 @@ fun ControlListScreen(
                             onControl = onControl)
                     }
                }//box 1
+
 
             CardSettingElement {
             Box(
@@ -138,6 +143,8 @@ fun PageBox2(listDataContainer:MutableList<DataContainer>, localState:Boolean,
         ButtonGate(giveDataById(listDataContainer,DataID.slidingGateOpen.id),
             giveDataById(listDataContainer,DataID.buttonGateSlidingSBS.id),
             localState,false, onControl)
+
+
     }
 
 }
@@ -200,8 +207,9 @@ fun ButtonLight(dataState: DataContainer, dataControl: DataContainer, localState
      //   enabled = enableButton.value,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp),
-        colors = ButtonDefaults.buttonColors(backgroundColor = colorButton)
+            .padding(10.dp),
+        colors = ButtonDefaults.buttonColors(backgroundColor = colorButton),
+        shape = RoundedCornerShape(8.dp)
 
     ) {
 //        Icon(
@@ -266,8 +274,9 @@ fun ButtonGate(dataState: DataContainer, dataControl: DataContainer,
         enabled = enableButton.value,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp),
-        colors = ButtonDefaults.buttonColors(backgroundColor = colorButton)
+            .padding(10.dp),
+        colors = ButtonDefaults.buttonColors(backgroundColor = colorButton),
+        shape = RoundedCornerShape(8.dp)
 
     ) {
         Icon(

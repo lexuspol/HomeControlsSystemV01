@@ -38,7 +38,7 @@ enum class DataID(val id:Int) {
     buttonSoundOff(-121),
     stateSoundOff(509),
 
-    completeUpdate(1000),
+    completeUpdate(1000),//используем для удаленного обновления
 
     mainDeviceName(400),
 

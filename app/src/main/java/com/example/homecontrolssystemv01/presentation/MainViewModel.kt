@@ -7,7 +7,6 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
@@ -17,7 +16,8 @@ import com.example.homecontrolssystemv01.domain.enum.LogKey
 import com.example.homecontrolssystemv01.domain.enum.MessageType
 import com.example.homecontrolssystemv01.domain.model.*
 import com.example.homecontrolssystemv01.domain.model.data.DataModel
-import com.example.homecontrolssystemv01.domain.model.logging.LogItem
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingValue
+import com.example.homecontrolssystemv01.domain.model.logging.LoggingID
 import com.example.homecontrolssystemv01.domain.model.message.Message
 import com.example.homecontrolssystemv01.domain.model.setting.ConnectSetting
 import com.example.homecontrolssystemv01.domain.model.setting.DataSetting
@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 
-class MainViewModel(application: Application): AndroidViewModel(application) {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val aplic = application
 
@@ -55,7 +55,6 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     private var _systemSetting = SystemSetting()
 
 
-
     private val sharedPref = aplic.getSharedPreferences("myPref", Context.MODE_PRIVATE)
 
     private fun createConnectSetting(): ConnectSetting {
@@ -68,31 +67,33 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         )
     }
 
-    fun putControlUI(controlInfo: ControlInfo){
+    fun putControlUI(controlInfo: ControlInfo) {
         putControl(controlInfo)
     }
 
-    fun putDataSettingUI(dataSetting: DataSetting){
+    fun putDataSettingUI(dataSetting: DataSetting) {
         viewModelScope.launch {
             putDataSetting(dataSetting)
         }
     }
 
-    fun resetCycleMode(){
+    fun resetCycleMode() {
         closeConnect()
     }
 
-    fun loadDataUI(){
+    fun loadDataUI() {
         loadData(createConnectSetting())
         putMessage(
-            Message(Date().time,
+            Message(
+                Date().time,
                 DataID.completeUpdate.id,
                 MessageType.SYSTEM.int,
-                DataID.completeUpdate.name)
+                DataID.completeUpdate.name
+            )
         )
     }
 
-    fun getDataSettingUI():LiveData<List<DataSetting>> = getDataSetting()
+    fun getDataSettingUI(): LiveData<List<DataSetting>> = getDataSetting()
 
     fun getDataListUI(): LiveData<List<DataModel>> {
         return getDataList()
@@ -100,16 +101,17 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     //без юскейса
 
-    fun getLogMapUI(idKey:String):MutableState<Map<String, LogItem>> {
-        return repository.getLogMap(idKey)
+    fun getLoggingValueUI(logKey: LoggingID): MutableState<LoggingValue> {
+        return repository.getLoggingValue(logKey)
     }
 
-    fun getLogIdListUI():MutableState<List<String>>{
-        return repository.getLogIdList()
+
+    fun getLoggingIdListUI(): MutableState<List<LoggingID>> {
+        return repository.getLoggingIdList()
     }
 
-    fun deleteLogItemUI(idKey:String){
-        repository.deleteLogItem(idKey)
+    fun deleteLoggingValueUI(logKey: LoggingID) {
+        repository.deleteLoggingValue(logKey)
     }
 
 //////
@@ -120,7 +122,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     }
 
-    fun deleteMessageUI(id:Int){
+    fun deleteMessageUI(id: Int) {
 
         viewModelScope.launch {
             deleteMessage(id)
@@ -128,7 +130,7 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     }
 
-    fun deleteDataUI(id:Int){
+    fun deleteDataUI(id: Int) {
 
         viewModelScope.launch {
             deleteData(id)
@@ -137,9 +139,9 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
     }
 
 
-    private fun putMessage(message: Message){
+    private fun putMessage(message: Message) {
 
-       // Log.d("HCS_putMessageListUI","${list.isEmpty()}")
+        // Log.d("HCS_putMessageListUI","${list.isEmpty()}")
         viewModelScope.launch {
             putMessageList(message)
         }
@@ -149,18 +151,18 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
 
     fun getSystemSettingUI(): SystemSetting = _systemSetting
 
-    fun setConnectSetting(connectSetting: ConnectSetting){
+    fun setConnectSetting(connectSetting: ConnectSetting) {
         _connectSetting = connectSetting
 
-      //  Log.d("HCS","fun setConnectSetting")
+        //  Log.d("HCS","fun setConnectSetting")
 
         with(sharedPref.edit()) {
-            putString(KEY_SSID,_connectSetting.ssid)
-            putBoolean(KEY_MODE_PERIODIC,_connectSetting.serverMode)
-            putBoolean(KEY_MODE_CYCLE,_connectSetting.cycleMode)
+            putString(KEY_SSID, _connectSetting.ssid)
+            putBoolean(KEY_MODE_PERIODIC, _connectSetting.serverMode)
+            putBoolean(KEY_MODE_CYCLE, _connectSetting.cycleMode)
 
             connectSetting.listLogSetting.forEach {
-                putInt(it.logKey,it.logId)
+                putInt(it.logKey, it.logId)
             }
 
             apply()
@@ -168,66 +170,69 @@ class MainViewModel(application: Application): AndroidViewModel(application) {
         loadData(createConnectSetting())
     }
 
-    fun setSystemSetting(systemSetting: SystemSetting){
+    fun setSystemSetting(systemSetting: SystemSetting) {
         _systemSetting = systemSetting
         with(sharedPref.edit()) {
-            putBoolean(KEY_SHOW_DETAILS,_systemSetting.showDetails)
+            putBoolean(KEY_SHOW_DETAILS, _systemSetting.showDetails)
             apply()
         }
     }
 
-    private fun getLoggingSetting():List<LogSetting>{
-       // Log.d("HCS","fun getLoggingSetting()")
+    private fun getLoggingSetting(): List<LogSetting> {
+        // Log.d("HCS","fun getLoggingSetting()")
         val listLogSetting = mutableListOf<LogSetting>()
         //запрос по колличеству Enum
         LogKey.values().forEach {
             listLogSetting.add(
                 LogSetting(
-                    sharedPref.getInt(it.name,0),
+                    sharedPref.getInt(it.name, 0),
                     it.name
-            )
+                )
             )
         }
         return listLogSetting.toList()
     }
 
-    fun getResourcesDataMapUI():Map<Int, ResourcesString.Data>{
+    fun getResourcesDataMapUI(): Map<Int, ResourcesString.Data> {
         return resourcesDataMap
     }
 
 
     private val _selectedTab: MutableState<Int> = mutableStateOf(0)
     val selectedTab: State<Int> get() = _selectedTab
-    fun selectTab(@StringRes tab: Int) {_selectedTab.value = tab}
+    fun selectTab(@StringRes tab: Int) {
+        _selectedTab.value = tab
+    }
 
     init {
         readPref()
-       // _resourcesDataMap = ResourcesStringObject.getResourcesDataMap(application)
+        // _resourcesDataMap = ResourcesStringObject.getResourcesDataMap(application)
         //loadData(createConnectSetting())
     }
+
     private fun readPref() {
         _connectSetting.ssid = sharedPref.getString(KEY_SSID, ConnectSetting().ssid).toString()
-        _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE_PERIODIC,false)
-        _systemSetting.showDetails = sharedPref.getBoolean(KEY_SHOW_DETAILS,false)
-        _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE,false)
+        _connectSetting.serverMode = sharedPref.getBoolean(KEY_MODE_PERIODIC, false)
+        _systemSetting.showDetails = sharedPref.getBoolean(KEY_SHOW_DETAILS, false)
+        _connectSetting.cycleMode = sharedPref.getBoolean(KEY_MODE_CYCLE, false)
         _connectSetting.listLogSetting = getLoggingSetting()
 
 
         val auth = Firebase.auth
-         if (auth.currentUser ==null) {
-             Log.d("HCS_MainViewModel","Firebase.auth == null")
-             auth.signInWithEmailAndPassword("geroi@tut.by", "Qwerty12")
-         }
+        if (auth.currentUser == null) {
+            Log.d("HCS_MainViewModel", "Firebase.auth == null")
+            auth.signInWithEmailAndPassword("geroi@tut.by", "Qwerty12")
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
         //if (_connectSetting.cycleMode) {
-         // closeConnect()
-       // }
+        // closeConnect()
+        // }
     }
 
-    companion object{
+    companion object {
         const val KEY_SSID = "SSID"
         const val KEY_MODE_PERIODIC = "MODE_PERIODIC"
         const val KEY_MODE_CYCLE = "MODE_CYCLE"

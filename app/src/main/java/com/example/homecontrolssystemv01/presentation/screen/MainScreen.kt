@@ -8,7 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.homecontrolssystemv01.presentation.MainViewModel
 import com.example.homecontrolssystemv01.presentation.ShopViewModel
 import com.example.homecontrolssystemv01.presentation.screen.data.DataScreen
-import com.example.homecontrolssystemv01.presentation.screen.logging.LoggingScreen
+import com.example.homecontrolssystemv01.presentation.screen.logging.LoggingScreenRev1
 import com.example.homecontrolssystemv01.presentation.screen.shop.ShopScreen
 
 @Composable
@@ -43,11 +43,11 @@ fun MainScreen(viewModel: MainViewModel, shopViewModel: ShopViewModel) {
         }
 
         composable(NavScreen.LoggingScreen.route) {
-            LoggingScreen(
+            LoggingScreenRev1(
                 resourcesDataMapUI,
-                getLogIdList = { viewModel.getLogIdListUI() },
-                getLog = { viewModel.getLogMapUI(it) },
-                deleteLogItem = { viewModel.deleteLogItemUI(it) }
+                getLoggingIdList = {viewModel.getLoggingIdListUI()},
+                getLoggingValue = {viewModel.getLoggingValueUI(it)},
+                deleteLoggingValue = { viewModel.deleteLoggingValueUI(it) }
                 // addItem = {viewModel.addShopItemUI(it)},
                 //  deleteItem = {viewModel.deleteShopItemUI(it)}
             ) { navController.navigateUp() }
